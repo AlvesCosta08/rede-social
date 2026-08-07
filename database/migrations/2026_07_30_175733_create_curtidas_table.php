@@ -10,25 +10,23 @@ return new class extends Migration
     {
         Schema::create('curtidas', function (Blueprint $table) {
             $table->id();
-            
-            // Mesmo tipo da tabela filiado
             $table->integer('filiado_matricula');
             $table->unsignedBigInteger('publicacao_id');
             $table->timestamps();
             
-            // Foreign keys
-            $table->foreign('filiado_matricula')
-                  ->references('matricula')
-                  ->on('filiado')
-                  ->onDelete('cascade');
-                  
-            $table->foreign('publicacao_id')
-                  ->references('id')
-                  ->on('publicacoes')
-                  ->onDelete('cascade');
-            
             // Unique para evitar curtidas duplicadas
-            $table->unique(['filiado_matricula', 'publicacao_id']);
+            $table->unique(['filiado_matricula', 'publicacao_id'], 'unique_curtida');
+            
+            // Foreign keys (se a tabela filiado existir)
+            // $table->foreign('filiado_matricula')
+            //       ->references('matricula')
+            //       ->on('filiado')
+            //       ->onDelete('cascade');
+                  
+            // $table->foreign('publicacao_id')
+            //       ->references('id')
+            //       ->on('publicacoes')
+            //       ->onDelete('cascade');
         });
     }
 

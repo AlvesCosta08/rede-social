@@ -2,14 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Curtida extends Model
 {
-    use HasFactory;
+    // ⭐ FORÇA O BANCO NOVO
+    protected $connection = 'mysql';
+    
+    // ⭐ ESPECIFICA O NOME CORRETO DA TABELA
+    protected $table = 'curtidas';  // <-- NOME CORRETO
+    
+    protected $fillable = [
+        'publicacao_id',
+        'filiado_matricula'
+    ];
 
-    protected $table = 'curtidas';  // ← OBRIGATÓRIO
+    public function filiado()
+    {
+        return $this->belongsTo(Filiado::class, 'filiado_matricula', 'matricula');
+    }
 
-    protected $fillable = ['filiado_matricula', 'publicacao_id'];
+    public function publicacao()
+    {
+        return $this->belongsTo(Publicacao::class, 'publicacao_id');
+    }
 }

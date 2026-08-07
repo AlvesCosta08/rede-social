@@ -9,19 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('filiado', function (Blueprint $table) {
-            // Verifica se a coluna existe
-            if (Schema::hasColumn('filiado', 'data_Consagracao')) {
-                $table->date('data_Consagracao')->nullable()->change();
-            }
+            $table->string('foto', 255)->nullable()->change();
         });
     }
 
     public function down(): void
     {
         Schema::table('filiado', function (Blueprint $table) {
-            if (Schema::hasColumn('filiado', 'data_Consagracao')) {
-                $table->date('data_Consagracao')->nullable(false)->change();
-            }
+            $table->string('foto', 100)->nullable()->change();
         });
     }
 };

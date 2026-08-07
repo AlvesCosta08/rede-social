@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
-use Pdo\Mysql;
+use PDO\Mysql;
 
 return [
 
@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -44,17 +44,41 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        // ============================================================
+        // CONEXÃO COM O BANCO NOVO (SISTEMA ATUAL)
+        // ============================================================
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
+            'database' => env('DB_DATABASE', 'adtc2m99_igreja_conectada'),
+            'username' => env('DB_USERNAME', 'adtc2m99_igreja_conectada'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        // ============================================================
+        // CONEXÃO COM O BANCO ANTIGO (SISTEMA LEGADO - ADTC2)
+        // ============================================================
+        'sistema_antigo' => [
+            'driver' => 'mysql',
+            'host' => env('DB_ANTIGO_HOST', '127.0.0.1'),
+            'port' => env('DB_ANTIGO_PORT', '3306'),
+            'database' => env('DB_ANTIGO_DATABASE', 'adtc2m99_adtc2'),
+            'username' => env('DB_ANTIGO_USERNAME', 'adtc2m99_adtc2'),
+            'password' => env('DB_ANTIGO_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
@@ -110,8 +134,6 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
     ],

@@ -17,7 +17,7 @@ return [
 
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'passwords' => env('AUTH_PASSWORD_BROKER', 'filiados'), // ⭐ MUDADO para 'filiados'
     ],
 
     /*
@@ -40,7 +40,7 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'filiados', // ⭐ MUDADO para 'filiados'
         ],
     ],
 
@@ -62,15 +62,17 @@ return [
     */
 
     'providers' => [
+        // ⭐ PROVIDER PARA TABELA filiado
+        'filiados' => [
+            'driver' => 'eloquent',
+            'model' => User::class, // ⭐ USA NOSSO MODEL User (que usa tabela filiado)
+        ],
+
+        // Mantém o provider 'users' como fallback (opcional)
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*
@@ -93,6 +95,14 @@ return [
     */
 
     'passwords' => [
+        // ⭐ ADICIONADO provider para filiados
+        'filiados' => [
+            'provider' => 'filiados',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),

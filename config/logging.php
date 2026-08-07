@@ -73,6 +73,50 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // ============================================================
+        // CANAL DE LOG PARA AUTENTICAÇÃO
+        // ============================================================
+        'auth' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/auth.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
+        // ============================================================
+        // CANAL DE LOG PARA BANCO DE DADOS
+        // ============================================================
+        'database' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/database.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 15,
+            'replace_placeholders' => true,
+        ],
+
+        // ============================================================
+        // CANAL DE LOG PARA ERROS
+        // ============================================================
+        'errors' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/errors.log'),
+            'level' => 'error',
+            'days' => 60,
+            'replace_placeholders' => true,
+        ],
+
+        // ============================================================
+        // CANAL DE LOG PARA ACESSO
+        // ============================================================
+        'access' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/access.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => 7,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

@@ -2,16 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Comentario extends Model
 {
-    use HasFactory;
-
-    protected $table = 'comentarios';  // ← OBRIGATÓRIO
-
-    protected $fillable = ['filiado_matricula', 'publicacao_id', 'conteudo'];
+    // ⭐ FORÇA O BANCO NOVO
+    protected $connection = 'mysql';
+    
+    // ⭐ ESPECIFICA O NOME CORRETO DA TABELA
+    protected $table = 'comentarios';  // <-- NOME CORRETO
+    
+    protected $fillable = [
+        'publicacao_id',
+        'filiado_matricula',
+        'conteudo'
+    ];
 
     public function autor()
     {
@@ -20,6 +25,15 @@ class Comentario extends Model
 
     public function publicacao()
     {
-        return $this->belongsTo(Publicacao::class);
+        return $this->belongsTo(Publicacao::class, 'publicacao_id');
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($comentario) {
+            if (!Filiado::on('mysql')->where('matricula', $comentario->filiado_matricula)->exists()) {
+                throw new \Exception('Matrícula inválida: ' . $comentario->filiado_matricula);
+            }
+        });
     }
 }
