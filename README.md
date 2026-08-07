@@ -1,60 +1,300 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+Sistema de Comunidade Cristã
+📋 Visão Geral
+Plataforma de comunidade cristã desenvolvida com Laravel, oferecendo funcionalidades completas de rede social, incluindo feed de publicações, perfis de membros, sistema de seguidores, e painel administrativo.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+🚀 Funcionalidades Principais
+🔐 Autenticação
+Login e registro de usuários
 
-## About Laravel
+Verificação de matrícula
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Sistema de logout
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Proteção contra ataques de força bruta
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+📱 Feed Social
+Publicação de posts
 
-## Learning Laravel
+Sistema de curtidas
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Comentários em posts
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Feed global e personalizado
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Deleção e edição de posts/comentários
 
-## Agentic Development
+👤 Perfis de Membros
+Visualização de perfis
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Edição de perfil
 
-```bash
-composer require laravel/boost --dev
+Upload e remoção de foto de perfil
 
-php artisan boost:install
-```
+Cartão digital do membro
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Visualização de posts por membro
 
-## Contributing
+🔍 Busca e Navegação
+Busca por membros (nome, matrícula)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Autocomplete para busca
 
-## Code of Conduct
+Busca avançada com filtros
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Busca por proximidade geográfica
 
-## Security Vulnerabilities
+Sugestões de membros
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+👥 Sistema de Seguidores
+Seguir/deixar de seguir membros
 
-## License
+Lista de seguidores/seguindo
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# rede-social
-# conexao-igreja
+Sugestões de membros para seguir
+
+Verificação de relação entre membros
+
+🛡️ Painel Administrativo
+CRUD completo de membros
+
+Ações em massa
+
+Estatísticas do sistema
+
+Exportação de dados
+
+Gerenciamento de posts
+
+📂 Estrutura do Projeto
+text
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Admin/
+│   │   │   │   └── MembroController.php
+│   │   │   ├── AuthController.php
+│   │   │   ├── FeedController.php
+│   │   │   ├── ImagemController.php
+│   │   │   ├── MembroController.php
+│   │   │   ├── PerfilController.php
+│   │   │   └── SeguidorController.php
+│   │   ├── Middleware/
+│   │   │   └── AdminMiddleware.php
+│   │   └── Requests/
+│   ├── Models/
+│   │   ├── Membro.php
+│   │   ├── Post.php
+│   │   ├── Comentario.php
+│   │   ├── Curtida.php
+│   │   ├── Seguidor.php
+│   │   └── Imagem.php
+│   └── Services/
+├── database/
+│   ├── migrations/
+│   └── seeders/
+├── resources/
+│   ├── views/
+│   │   ├── auth/
+│   │   ├── feed/
+│   │   ├── perfil/
+│   │   ├── membros/
+│   │   ├── seguidores/
+│   │   └── admin/
+│   └── css/
+├── routes/
+│   └── web.php
+└── public/
+    └── uploads/
+🛡️ Segurança
+Práticas Implementadas
+CSRF Protection em todas as requisições POST/PUT/DELETE
+
+SQL Injection Protection via Eloquent ORM
+
+XSS Protection com escopo de saída
+
+Rate Limiting para prevenir DDoS
+
+Validação de dados nas requisições
+
+Verificação de permissões em ações administrativas
+
+Autenticação obrigatória para rotas protegidas
+
+Limites de Requisição
+Feed: 300 req/min
+
+Publicações: 20 req/min
+
+Curtidas: 100 req/min
+
+Comentários: 30 req/min
+
+Buscas: 60 req/min
+
+Login: 10 req/min
+
+📊 Modelos de Dados
+Principais Modelos
+Membro - Usuários da plataforma
+
+Matrícula, nome, email, foto, cargo, função, etc.
+
+Post - Publicações no feed
+
+Conteúdo, imagem, membro_id, data
+
+Comentario - Comentários em posts
+
+Conteúdo, post_id, membro_id
+
+Curtida - Curtidas em posts
+
+post_id, membro_id
+
+Seguidor - Relações de seguir
+
+seguidor_id, seguido_id, data
+
+Imagem - Fotos de perfil e posts
+
+Caminho, tipo, membro_id
+
+Relacionamentos
+Membro → Posts (1:N)
+
+Post → Comentarios (1:N)
+
+Post → Curtidas (1:N)
+
+Membro → Seguidores (auto-relacionamento N:N)
+
+🔧 Instalação e Configuração
+Pré-requisitos
+PHP 8.0+
+
+Composer
+
+MySQL/PostgreSQL
+
+Laravel 10+
+
+Passos para Instalação
+bash
+# Clone o repositório
+git clone [url-do-repositorio]
+
+# Instale as dependências
+composer install
+
+# Configure o arquivo .env
+cp .env.example .env
+
+# Gere a chave da aplicação
+php artisan key:generate
+
+# Execute as migrações
+php artisan migrate
+
+# Popule o banco de dados (opcional)
+php artisan db:seed
+
+# Inicie o servidor
+php artisan serve
+Variáveis de Ambiente
+env
+APP_NAME="Sistema Comunidade"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=comunidade
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Configurações de upload
+UPLOAD_MAX_SIZE=2048
+ALLOWED_EXTENSIONS=jpg,jpeg,png,gif
+🧪 Testes
+bash
+# Executar todos os testes
+php artisan test
+
+# Executar testes específicos
+php artisan test --filter=AuthController
+
+# Executar com cobertura de código
+php artisan test --coverage
+📝 Logs e Monitoramento
+Os logs são registrados em storage/logs/laravel.log com os seguintes níveis:
+
+Erros 404: Registrados com detalhes da requisição
+
+Ações administrativas: Registro de operações críticas
+
+Falhas de autenticação: Tentativas de login inválidas
+
+Operações de banco: Queries lentas e erros
+
+📦 Dependências
+Produção
+Laravel Framework ^10.0
+
+MySQL/MariaDB Driver
+
+Laravel Sanctum (API)
+
+Intervention Image (manipulação de imagens)
+
+Laravel Debugbar (desenvolvimento)
+
+Desenvolvimento
+Laravel Tinker
+
+PHPUnit
+
+Laravel Sail (Docker)
+
+Laravel IDE Helper
+
+🤝 Contribuição
+Fork o projeto
+
+Crie sua branch (git checkout -b feature/nova-funcionalidade)
+
+Commit suas mudanças (git commit -m 'Adiciona nova funcionalidade')
+
+Push para a branch (git push origin feature/nova-funcionalidade)
+
+Abra um Pull Request
+
+Padrões de Código
+PSR-12 para PHP
+
+ESLint para JavaScript
+
+Nomes de classes em PascalCase
+
+Métodos em camelCase
+
+Variáveis em snake_case
+
+📄 Licença
+Este projeto é proprietário e confidencial.
+
+📞 Suporte
+Para suporte, entre em contato com a equipe de desenvolvimento.
+
+📚 Documentação Adicional
+Documentação do Laravel
+
+Guia de Estilo PHP
+
+Padrões de Projeto
+
+Versão: 1.0.0
+Última Atualização: 2026
+
