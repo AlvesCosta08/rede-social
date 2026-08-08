@@ -3,27 +3,38 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Curtida extends Model
 {
-    // ⭐ FORÇA O BANCO NOVO
     protected $connection = 'mysql';
-    
-    // ⭐ ESPECIFICA O NOME CORRETO DA TABELA
-    protected $table = 'curtidas';  // <-- NOME CORRETO
-    
+    protected $table = 'curtidas';
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = true;
+
     protected $fillable = [
         'publicacao_id',
-        'filiado_matricula'
+        'filiado_matricula',
+        'created_at'
     ];
 
-    public function filiado()
+    protected $casts = [
+        'created_at' => 'datetime',
+    ];
+
+    // ============================================================
+    // RELACIONAMENTOS
+    // ============================================================
+
+    public function publicacao(): BelongsTo
     {
-        return $this->belongsTo(Filiado::class, 'filiado_matricula', 'matricula');
+        return $this->belongsTo(Publicacao::class, 'publicacao_id', 'id');
     }
 
-    public function publicacao()
+    public function usuario(): BelongsTo
     {
-        return $this->belongsTo(Publicacao::class, 'publicacao_id');
+        return $this->belongsTo(User::class, 'filiado_matricula', 'matricula');
     }
 }

@@ -505,6 +505,33 @@
         gap: 10px;
     }
 
+    /* ⭐ BADGE DE NÍVEL DO USUÁRIO */
+    .nivel-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+
+    .nivel-admin {
+        background: #f44336;
+        color: white;
+    }
+
+    .nivel-secretario {
+        background: #ff9800;
+        color: white;
+    }
+
+    .nivel-usuario {
+        background: #9e9e9e;
+        color: white;
+    }
+
     @media (max-width: 768px) {
         .admin-header {
             flex-direction: column;
@@ -626,18 +653,33 @@
             Gerenciar Membros
         </h2>
         <div class="actions">
-            <a href="{{ route('admin.membros.create') }}" class="btn-admin btn-admin-primary">
-                <span>➕</span> Novo Membro
-            </a>
-            <button type="button" class="btn-admin btn-admin-outline" onclick="toggleBulkActions()">
-                <span>☑️</span> Ações em Massa
-            </button>
-            <a href="{{ route('admin.membros.exportar', request()->query()) }}" class="btn-admin btn-admin-outline">
-                <span>📥</span> Exportar
-            </a>
-            <a href="{{ route('admin.estatisticas') }}" class="btn-admin btn-admin-outline">
-                <span>📊</span> Estatísticas
-            </a>
+            {{-- ⭐ BOTÃO NOVO MEMBRO - APENAS QUEM PODE CRIAR --}}
+            @if(auth()->user()?->pode('criar_membro'))
+                <a href="{{ route('admin.membros.create') }}" class="btn-admin btn-admin-primary">
+                    <span>➕</span> Novo Membro
+                </a>
+            @endif
+
+            {{-- ⭐ AÇÕES EM MASSA - APENAS QUEM PODE EDITAR --}}
+            @if(auth()->user()?->pode('editar_membro'))
+                <button type="button" class="btn-admin btn-admin-outline" onclick="toggleBulkActions()">
+                    <span>☑️</span> Ações em Massa
+                </button>
+            @endif
+
+            {{-- ⭐ EXPORTAR - APENAS QUEM PODE EXPORTAR --}}
+            @if(auth()->user()?->pode('exportar_membros'))
+                <a href="{{ route('admin.membros.exportar', request()->query()) }}" class="btn-admin btn-admin-outline">
+                    <span>📥</span> Exportar
+                </a>
+            @endif
+
+            {{-- ⭐ ESTATÍSTICAS - APENAS QUEM PODE VER DASHBOARD --}}
+            @if(auth()->user()?->pode('dashboard'))
+                <a href="{{ route('admin.estatisticas') }}" class="btn-admin btn-admin-outline">
+                    <span>📊</span> Estatísticas
+                </a>
+            @endif
         </div>
     </div>
 
@@ -722,7 +764,10 @@
                 <option value="ativar">✅ Ativar</option>
                 <option value="inativar">⛔ Inativar</option>
                 <option value="transferir">🔄 Transferir</option>
-                <option value="deletar">🗑️ Deletar</option>
+                {{-- ⭐ APENAS ADMIN PODE DELETAR EM MASSA --}}
+                @if(auth()->user()?->pode('excluir_membro'))
+                    <option value="deletar">🗑️ Deletar</option>
+                @endif
             </select>
             
             <button type="submit" class="btn-admin btn-admin-success" onclick="return confirmBulkAction()">
@@ -741,9 +786,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th class="checkbox-column">
-                            <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes(this)">
-                        </th>
+                        {{-- ⭐ CHECKBOX - APENAS QUEM PODE EDITAR --}}
+                        @if(auth()->user()?->pode('editar_membro'))
+                            <th class="checkbox-column">
+                                <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes(this)">
+                            </th>
+                        @endif
                         <th>Matrícula</th>
                         <th>Nome</th>
                         <th>Função</th>
@@ -756,9 +804,12 @@
                 <tbody>
                     @forelse($membros as $membro)
                         <tr>
-                            <td class="checkbox-column">
-                                <input type="checkbox" class="member-checkbox" value="{{ $membro->matricula }}" onchange="updateSelectedCount()">
-                            </td>
+                            {{-- ⭐ CHECKBOX - APENAS QUEM PODE EDITAR --}}
+                            @if(auth()->user()?->pode('editar_membro'))
+                                <td class="checkbox-column">
+                                    <input type="checkbox" class="member-checkbox" value="{{ $membro->matricula }}" onchange="updateSelectedCount()">
+                                </td>
+                            @endif
                             <td>
                                 <strong>#{{ $membro->matricula }}</strong>
                             </td>
@@ -766,6 +817,14 @@
                                 {{ $membro->nome }}
                                 @if($membro->email)
                                     <br><small style="color: #999; font-size: 0.7rem;">{{ $membro->email }}</small>
+                                @endif
+                                {{-- ⭐ MOSTRA O NÍVEL DO USUÁRIO (SE FOR ADMIN OU SECRETÁRIO) --}}
+                                @if(isset($membro->nivel))
+                                    @if($membro->nivel === 'admin')
+                                        <br><span class="nivel-badge nivel-admin">👑 Admin</span>
+                                    @elseif($membro->nivel === 'secretario')
+                                        <br><span class="nivel-badge nivel-secretario">📋 Secretário</span>
+                                    @endif
                                 @endif
                             </td>
                             <td>{{ $membro->funcao ?? '—' }}</td>
@@ -778,34 +837,51 @@
                             </td>
                             <td>
                                 <div class="action-buttons">
+                                    {{-- VISUALIZAR - TODOS PODEM VER --}}
                                     <a href="{{ route('admin.membros.show', $membro->matricula) }}" class="btn-sm btn-sm-view" title="Visualizar">
                                         <span>👁️</span>
                                     </a>
-                                    <a href="{{ route('admin.membros.edit', $membro->matricula) }}" class="btn-sm btn-sm-edit" title="Editar">
-                                        <span>✏️</span>
-                                    </a>
-                                    <a href="{{ route('admin.membros.posts', $membro->matricula) }}" class="btn-sm btn-sm-posts" title="Ver Posts">
-                                        <span>📝</span>
-                                    </a>
-                                    <form action="{{ route('admin.membros.destroy', $membro->matricula) }}" method="POST" style="display: inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-sm btn-sm-delete" title="Remover" onclick="return confirm('Tem certeza que deseja remover o membro {{ addslashes($membro->nome) }}?')">
-                                            <span>🗑️</span>
-                                        </button>
-                                    </form>
+
+                                    {{-- ⭐ EDITAR - APENAS QUEM PODE EDITAR ESTE MEMBRO --}}
+                                    @if(auth()->user()?->pode('editar_membro', $membro))
+                                        <a href="{{ route('admin.membros.edit', $membro->matricula) }}" class="btn-sm btn-sm-edit" title="Editar">
+                                            <span>✏️</span>
+                                        </a>
+                                    @endif
+
+                                    {{-- VER POSTS - APENAS QUEM PODE VER DASHBOARD --}}
+                                    @if(auth()->user()?->pode('dashboard'))
+                                        <a href="{{ route('admin.membros.posts', $membro->matricula) }}" class="btn-sm btn-sm-posts" title="Ver Posts">
+                                            <span>📝</span>
+                                        </a>
+                                    @endif
+
+                                    {{-- ⭐ DELETAR - APENAS ADMIN --}}
+                                    @if(auth()->user()?->pode('excluir_membro'))
+                                        <form action="{{ route('admin.membros.destroy', $membro->matricula) }}" method="POST" style="display: inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-sm btn-sm-delete" title="Remover" onclick="return confirm('Tem certeza que deseja remover o membro {{ addslashes($membro->nome) }}?')">
+                                                <span>🗑️</span>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
+                            <td colspan="{{ auth()->user()?->pode('editar_membro') ? '8' : '7' }}">
                                 <div class="empty-state">
                                     <span class="empty-icon">👥</span>
                                     <p><strong>Nenhum membro encontrado</strong></p>
                                     <p class="empty-sub">
                                         Tente ajustar os filtros ou 
-                                        <a href="{{ route('admin.membros.create') }}">cadastre um novo membro</a>
+                                        @if(auth()->user()?->pode('criar_membro'))
+                                            <a href="{{ route('admin.membros.create') }}">cadastre um novo membro</a>
+                                        @else
+                                            entre em contato com a secretaria
+                                        @endif
                                     </p>
                                 </div>
                             </td>

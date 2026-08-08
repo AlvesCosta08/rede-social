@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Filiado;
+use App\Models\User;
 use App\Models\Publicacao;
 use App\Models\Comentario;
 use App\Models\Curtida;
@@ -18,18 +18,19 @@ class MembroController extends Controller
 {
     /**
      * Listar todos os membros (admin)
+     * ⭐ VERIFICA PERMISSÃO DASHBOARD
      */
     public function index(Request $request)
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
+        if (!$user || !$user->pode('dashboard')) {
+            abort(403, 'Acesso restrito.');
         }
 
-        $query = Filiado::on('mysql');
+        $query = User::query();
 
-        // Busca por nome, matrícula, email, documento
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -42,28 +43,22 @@ class MembroController extends Controller
             });
         }
 
-        // Filtro por status
         if ($request->filled('status')) {
-            if ($request->status === 'todos') {
-                // Mostra todos
-            } else {
+            if ($request->status !== 'todos') {
                 $query->where('status', $request->status);
             }
         } else {
             $query->where('status', '!=', 'saida');
         }
 
-        // Filtro por função
         if ($request->filled('funcao')) {
             $query->where('funcao', $request->funcao);
         }
 
-        // Filtro por congregação
         if ($request->filled('congregacao')) {
             $query->where('congregacao', 'LIKE', "%{$request->congregacao}%");
         }
 
-        // Ordenação
         $ordenar = $request->get('ordenar', 'matricula');
         $direcao = $request->get('direcao', 'desc');
         
@@ -76,17 +71,14 @@ class MembroController extends Controller
 
         $membros = $query->paginate(30)->withQueryString();
 
-        // Dados para filtros
-        $funcoes = Filiado::on('mysql')
-            ->whereNotNull('funcao')
+        $funcoes = User::whereNotNull('funcao')
             ->distinct()
             ->pluck('funcao')
             ->sort()
             ->values()
             ->toArray();
 
-        $congregacoes = Filiado::on('mysql')
-            ->whereNotNull('congregacao')
+        $congregacoes = User::whereNotNull('congregacao')
             ->distinct()
             ->pluck('congregacao')
             ->sort()
@@ -94,17 +86,15 @@ class MembroController extends Controller
             ->toArray();
 
         $stats = [
-            'total' => Filiado::on('mysql')->count(),
-            'ativos' => Filiado::on('mysql')->where('status', 'ativo')->count(),
-            'inativos' => Filiado::on('mysql')->where('status', 'inativo')->count(),
-            'transferidos' => Filiado::on('mysql')->where('status', 'transferido')->count(),
-            'saida' => Filiado::on('mysql')->where('status', 'saida')->count(),
+            'total' => User::count(),
+            'ativos' => User::where('status', 'ativo')->count(),
+            'inativos' => User::where('status', 'inativo')->count(),
+            'transferidos' => User::where('status', 'transferido')->count(),
+            'saida' => User::where('status', 'saida')->count(),
         ];
 
-        // ✅ LISTA DE STATUS PARA O FILTRO
         $statusList = ['ativo', 'inativo', 'transferido', 'saida'];
 
-        // ✅ VARIÁVEIS PARA A VIEW
         $totalMembros = $stats['total'];
         $totalAtivos = $stats['ativos'];
         $totalInativos = $stats['inativos'];
@@ -127,23 +117,22 @@ class MembroController extends Controller
 
     /**
      * Mostrar detalhes de um membro (admin)
+     * ⭐ VERIFICA PERMISSÃO VER_MEMBRO
      */
     public function show($matricula)
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('ver_membro')) {
+            abort(403, 'Acesso restrito.');
         }
 
-        $membro = Filiado::on('mysql')
-            ->with(['publicacoes' => function($query) {
+        $membro = User::with(['publicacoes' => function($query) {
                 $query->orderBy('created_at', 'desc')->limit(20);
             }])
             ->where('matricula', $matricula)
             ->firstOrFail();
 
-        // Estatísticas do membro
         $stats = [
             'total_publicacoes' => $membro->publicacoes()->count(),
             'total_comentarios' => $membro->comentarios()->count(),
@@ -156,16 +145,16 @@ class MembroController extends Controller
 
     /**
      * Formulário para criar um novo membro (admin)
+     * ⭐ VERIFICA PERMISSÃO CRIAR_MEMBRO
      */
     public function create()
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('criar_membro')) {
+            abort(403, 'Você não tem permissão para criar membros.');
         }
 
-        // ✅ LISTAS PARA OS SELECTS
         $estadoCivilList = [
             'Solteiro(a)',
             'Casado(a)',
@@ -182,8 +171,7 @@ class MembroController extends Controller
 
         $statusList = ['ativo', 'inativo', 'transferido'];
 
-        $congregacoes = Filiado::on('mysql')
-            ->whereNotNull('congregacao')
+        $congregacoes = User::whereNotNull('congregacao')
             ->distinct()
             ->pluck('congregacao')
             ->sort()
@@ -194,8 +182,7 @@ class MembroController extends Controller
             $congregacoes = ['Sede'];
         }
 
-        $funcoes = Filiado::on('mysql')
-            ->whereNotNull('funcao')
+        $funcoes = User::whereNotNull('funcao')
             ->distinct()
             ->pluck('funcao')
             ->sort()
@@ -226,16 +213,16 @@ class MembroController extends Controller
 
     /**
      * Criar um novo membro (admin)
+     * ⭐ VERIFICA PERMISSÃO CRIAR_MEMBRO
      */
     public function store(Request $request)
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('criar_membro')) {
+            abort(403, 'Você não tem permissão para criar membros.');
         }
 
-        // ✅ VALIDAÇÃO COMPLETA COM NOMES CORRETOS
         $validator = Validator::make($request->all(), [
             'nome' => 'required|string|max:255|min:3',
             'nome_carteira' => 'nullable|string|max:100',
@@ -301,8 +288,19 @@ class MembroController extends Controller
 
         $documentoLimpo = preg_replace('/[^0-9]/', '', $request->documento);
 
+        // ⭐ SE FOR SECRETÁRIO, FORÇA A CONGREGAÇÃO DELE
+        $congregacao = $request->congregacao;
+        if ($user->isSecretario()) {
+            $congregacao = $user->congregacao;
+        }
+
         try {
+            // ⭐ GERA PRÓXIMA MATRÍCULA
+            $ultimaMatricula = User::max('matricula') ?? 0;
+            $novaMatricula = $ultimaMatricula + 1;
+
             $dados = [
+                'matricula' => $novaMatricula,
                 'nome' => $request->nome,
                 'nome_carteira' => $request->nome_carteira ?? $request->nome,
                 'email' => $request->email,
@@ -317,12 +315,13 @@ class MembroController extends Controller
                 'cep' => $request->cep,
                 'cidade' => $request->cidade,
                 'uf' => $request->uf,
-                'congregacao' => $request->congregacao,
+                'congregacao' => $congregacao,
                 'funcao' => $request->funcao,
                 'password' => Hash::make($request->senha),
                 'status' => $request->status ?? 'ativo',
                 'privacidade' => true,
-                'datCadastro' => now(),
+                'nivel' => 'usuario',
+                'datCadastro' => date('d/m/Y'),
                 'created_at' => now(),
                 'updated_at' => now(),
                 'mae' => $request->mae,
@@ -331,7 +330,7 @@ class MembroController extends Controller
                 'estadoCivil' => $request->estadoCivil,
             ];
 
-            $membro = Filiado::on('mysql')->create($dados);
+            $membro = User::create($dados);
 
             Log::info('👤 Admin criou novo membro', [
                 'admin' => $user->matricula,
@@ -340,7 +339,7 @@ class MembroController extends Controller
             ]);
 
             return redirect()->route('admin.membros.show', $membro->matricula)
-                ->with('success', 'Membro criado com sucesso!');
+                ->with('success', "Membro criado com sucesso! Matrícula: {$membro->matricula}");
 
         } catch (\Exception $e) {
             Log::error('❌ Erro ao criar membro', [
@@ -356,18 +355,19 @@ class MembroController extends Controller
 
     /**
      * Editar um membro (admin)
+     * ⭐ VERIFICA PERMISSÃO EDITAR_MEMBRO
      */
     public function edit($matricula)
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        $membro = User::where('matricula', $matricula)->firstOrFail();
+        
+        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
+        if (!$user || !$user->pode('editar_membro', $membro)) {
+            abort(403, 'Você não tem permissão para editar este membro.');
         }
 
-        $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
-
-        // ✅ LISTAS PARA OS SELECTS
         $estadoCivilList = [
             'Solteiro(a)',
             'Casado(a)',
@@ -384,8 +384,7 @@ class MembroController extends Controller
 
         $statusList = ['ativo', 'inativo', 'transferido', 'saida'];
 
-        $congregacoes = Filiado::on('mysql')
-            ->whereNotNull('congregacao')
+        $congregacoes = User::whereNotNull('congregacao')
             ->distinct()
             ->pluck('congregacao')
             ->sort()
@@ -396,8 +395,7 @@ class MembroController extends Controller
             $congregacoes = ['Sede'];
         }
 
-        $funcoes = Filiado::on('mysql')
-            ->whereNotNull('funcao')
+        $funcoes = User::whereNotNull('funcao')
             ->distinct()
             ->pluck('funcao')
             ->sort()
@@ -429,18 +427,19 @@ class MembroController extends Controller
 
     /**
      * Atualizar um membro (admin)
+     * ⭐ VERIFICA PERMISSÃO EDITAR_MEMBRO
      */
     public function update(Request $request, $matricula)
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        $membro = User::where('matricula', $matricula)->firstOrFail();
+        
+        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
+        if (!$user || !$user->pode('editar_membro', $membro)) {
+            abort(403, 'Você não tem permissão para editar este membro.');
         }
 
-        $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
-
-        // ✅ VALIDAÇÃO COMPLETA
         $rules = [
             'nome' => 'required|string|max:255|min:3',
             'nome_carteira' => 'nullable|string|max:100',
@@ -464,14 +463,12 @@ class MembroController extends Controller
             'estadoCivil' => 'nullable|string|max:50',
         ];
 
-        // Valida email se mudou
         if ($request->has('email') && $request->email !== $membro->email) {
             $rules['email'] = 'required|email|max:255|unique:filiado,email';
         } elseif ($request->has('email')) {
             $rules['email'] = 'required|email|max:255';
         }
 
-        // Valida documento se mudou
         if ($request->has('documento') && $request->documento !== $membro->documento) {
             $rules['documento'] = [
                 'required',
@@ -489,7 +486,6 @@ class MembroController extends Controller
             $rules['documento'] = 'required|string|max:20';
         }
 
-        // Valida senha se for alterada
         if ($request->filled('nova_senha')) {
             $rules['nova_senha'] = 'required|string|min:8|confirmed';
         }
@@ -549,6 +545,11 @@ class MembroController extends Controller
                 'estadoCivil' => $request->estadoCivil,
             ];
 
+            // ⭐ SE FOR SECRETÁRIO, NÃO PODE MUDAR A CONGREGAÇÃO
+            if ($user->isSecretario()) {
+                $dadosParaAtualizar['congregacao'] = $membro->congregacao;
+            }
+
             if ($request->has('email') && $request->email !== $membro->email) {
                 $dadosParaAtualizar['email'] = $request->email;
             }
@@ -587,34 +588,32 @@ class MembroController extends Controller
 
     /**
      * Deletar um membro (admin)
+     * ⭐ VERIFICA PERMISSÃO EXCLUIR_MEMBRO
      */
     public function destroy($matricula)
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
+        if (!$user || !$user->pode('excluir_membro')) {
+            abort(403, 'Você não tem permissão para excluir membros.');
         }
 
         try {
-            $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
+            $membro = User::where('matricula', $matricula)->firstOrFail();
 
-            // Impede deletar o próprio admin
             if ($membro->matricula == $user->matricula) {
                 return back()->with('error', 'Você não pode deletar sua própria conta.');
             }
 
-            // Remove dados relacionados
-            Publicacao::on('mysql')->where('filiado_matricula', $matricula)->delete();
-            Comentario::on('mysql')->where('filiado_matricula', $matricula)->delete();
-            Curtida::on('mysql')->where('filiado_matricula', $matricula)->delete();
+            Publicacao::where('filiado_matricula', $matricula)->delete();
+            Comentario::where('filiado_matricula', $matricula)->delete();
+            Curtida::where('filiado_matricula', $matricula)->delete();
             
-            // Remove foto
             if ($membro->foto) {
                 $this->removerFoto($membro->foto);
             }
 
-            // Deleta o membro
             $nome = $membro->nome;
             $membro->delete();
 
@@ -645,8 +644,8 @@ class MembroController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('dashboard')) {
+            abort(403, 'Acesso restrito.');
         }
 
         $request->validate([
@@ -658,7 +657,6 @@ class MembroController extends Controller
         $ids = $request->ids;
         $action = $request->action;
 
-        // Impede ações em massa no próprio admin
         if (in_array($user->matricula, $ids) && $action === 'deletar') {
             return response()->json([
                 'success' => false,
@@ -671,7 +669,7 @@ class MembroController extends Controller
 
             $count = 0;
             foreach ($ids as $id) {
-                $membro = Filiado::on('mysql')->where('matricula', $id)->first();
+                $membro = User::where('matricula', $id)->first();
                 if (!$membro) continue;
 
                 switch ($action) {
@@ -692,9 +690,9 @@ class MembroController extends Controller
                         break;
                     case 'deletar':
                         if ($id != $user->matricula) {
-                            Publicacao::on('mysql')->where('filiado_matricula', $id)->delete();
-                            Comentario::on('mysql')->where('filiado_matricula', $id)->delete();
-                            Curtida::on('mysql')->where('filiado_matricula', $id)->delete();
+                            Publicacao::where('filiado_matricula', $id)->delete();
+                            Comentario::where('filiado_matricula', $id)->delete();
+                            Curtida::where('filiado_matricula', $id)->delete();
                             if ($membro->foto) {
                                 $this->removerFoto($membro->foto);
                             }
@@ -749,11 +747,11 @@ class MembroController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('exportar_membros')) {
+            abort(403, 'Você não tem permissão para exportar dados.');
         }
 
-        $query = Filiado::on('mysql');
+        $query = User::query();
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -773,10 +771,8 @@ class MembroController extends Controller
         $callback = function() use ($membros) {
             $file = fopen('php://output', 'w');
             
-            // BOM para UTF-8
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // Cabeçalho
             fputcsv($file, [
                 'Matrícula',
                 'Nome', 
@@ -794,7 +790,6 @@ class MembroController extends Controller
                 'Admin'
             ]);
 
-            // Dados
             foreach ($membros as $membro) {
                 fputcsv($file, [
                     $membro->matricula,
@@ -827,45 +822,37 @@ class MembroController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('dashboard')) {
+            abort(403, 'Acesso restrito.');
         }
 
         $stats = [
-            'total' => Filiado::on('mysql')->count(),
-            'ativos' => Filiado::on('mysql')->where('status', 'ativo')->count(),
-            'inativos' => Filiado::on('mysql')->where('status', 'inativo')->count(),
-            'transferidos' => Filiado::on('mysql')->where('status', 'transferido')->count(),
-            'saida' => Filiado::on('mysql')->where('status', 'saida')->count(),
+            'total' => User::count(),
+            'ativos' => User::where('status', 'ativo')->count(),
+            'inativos' => User::where('status', 'inativo')->count(),
+            'transferidos' => User::where('status', 'transferido')->count(),
+            'saida' => User::where('status', 'saida')->count(),
         ];
 
-        // Por função
-        $porFuncao = Filiado::on('mysql')
-            ->selectRaw('funcao, count(*) as total')
+        $porFuncao = User::selectRaw('funcao, count(*) as total')
             ->groupBy('funcao')
             ->orderBy('total', 'desc')
             ->get();
 
-        // Por cidade
-        $porCidade = Filiado::on('mysql')
-            ->selectRaw('cidade, count(*) as total')
+        $porCidade = User::selectRaw('cidade, count(*) as total')
             ->whereNotNull('cidade')
             ->groupBy('cidade')
             ->orderBy('total', 'desc')
             ->limit(10)
             ->get();
 
-        // Por congregação
-        $porCongregacao = Filiado::on('mysql')
-            ->selectRaw('congregacao, count(*) as total')
+        $porCongregacao = User::selectRaw('congregacao, count(*) as total')
             ->whereNotNull('congregacao')
             ->groupBy('congregacao')
             ->orderBy('total', 'desc')
             ->get();
 
-        // Aniversariantes do mês
-        $aniversariantes = Filiado::on('mysql')
-            ->whereMonth('dataNascimento', now()->month)
+        $aniversariantes = User::whereMonth('dataNascimento', now()->month)
             ->orderByRaw('DAY(dataNascimento)')
             ->get(['matricula', 'nome', 'dataNascimento', 'foto', 'funcao']);
 
@@ -885,14 +872,13 @@ class MembroController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('dashboard')) {
+            abort(403, 'Acesso restrito.');
         }
 
-        $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
+        $membro = User::where('matricula', $matricula)->firstOrFail();
 
-        $publicacoes = Publicacao::on('mysql')
-            ->where('filiado_matricula', $matricula)
+        $publicacoes = Publicacao::where('filiado_matricula', $matricula)
             ->with(['autor', 'comentarios', 'curtidas'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
@@ -907,16 +893,16 @@ class MembroController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Acesso restrito a administradores.');
+        if (!$user || !$user->pode('dashboard')) {
+            abort(403, 'Acesso restrito.');
         }
 
         try {
-            $publicacao = Publicacao::on('mysql')->findOrFail($id);
+            $publicacao = Publicacao::findOrFail($id);
             $matricula = $publicacao->filiado_matricula;
             
-            Comentario::on('mysql')->where('publicacao_id', $id)->delete();
-            Curtida::on('mysql')->where('publicacao_id', $id)->delete();
+            Comentario::where('publicacao_id', $id)->delete();
+            Curtida::where('publicacao_id', $id)->delete();
             $publicacao->delete();
 
             Log::info('🗑️ Admin deletou publicação', [

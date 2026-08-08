@@ -11,10 +11,19 @@
     <div class="card-modern mb-6">
         <div class="flex items-center gap-4">
             <div class="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
-                @if($perfil->foto)
-                    <img src="{{ $perfil->foto_url }}" alt="{{ $perfil->nome }}" class="w-full h-full object-cover">
+                @php
+                    $fotoNome = $perfil->foto ?? null;
+                    $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                    $inicial = substr($perfil->nome, 0, 1);
+                @endphp
+                
+                @if($fotoUrl)
+                    <img src="{{ $fotoUrl }}" 
+                         alt="{{ $perfil->nome }}" 
+                         class="w-full h-full object-cover"
+                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $inicial }}';">
                 @else
-                    {{ substr($perfil->nome, 0, 1) }}
+                    {{ $inicial }}
                 @endif
             </div>
             <div>
@@ -46,10 +55,19 @@
                     <div class="flex items-start justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                                @if($publicacao->autor && $publicacao->autor->foto)
-                                    <img src="{{ $publicacao->autor->foto_url }}" alt="{{ $publicacao->autor->nome }}" class="w-full h-full object-cover">
+                                @php
+                                    $autorFotoNome = $publicacao->autor->foto ?? null;
+                                    $autorFotoUrl = $autorFotoNome ? route('imagem.foto', ['filename' => $autorFotoNome]) : null;
+                                    $autorInicial = $publicacao->autor ? substr($publicacao->autor->nome, 0, 1) : '?';
+                                @endphp
+                                
+                                @if($autorFotoUrl)
+                                    <img src="{{ $autorFotoUrl }}" 
+                                         alt="{{ $publicacao->autor->nome ?? 'Usuário' }}" 
+                                         class="w-full h-full object-cover"
+                                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $autorInicial }}';">
                                 @else
-                                    {{ $publicacao->autor ? substr($publicacao->autor->nome, 0, 1) : '?' }}
+                                    {{ $autorInicial }}
                                 @endif
                             </div>
                             <div>
@@ -62,7 +80,8 @@
                             </div>
                         </div>
                         
-                        @if(auth()->check() && (auth()->user()->matricula == $publicacao->filiado_matricula || auth()->user()->isAdmin()))
+                        {{-- ⭐ DELETAR: PRÓPRIO USUÁRIO OU ADMIN/SECRETÁRIO --}}
+                        @if(auth()->check() && (auth()->user()->matricula == $publicacao->filiado_matricula || auth()->user()->pode('excluir_membro')))
                             <div class="flex gap-2">
                                 <button onclick="editarPublicacao({{ $publicacao->id }})" 
                                         class="text-gray-400 hover:text-blue-500 transition">
@@ -106,10 +125,19 @@
                                 <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                                     <div class="flex items-start gap-2">
                                         <div class="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                            @if($comentario->autor && $comentario->autor->foto)
-                                                <img src="{{ $comentario->autor->foto_url }}" alt="" class="w-full h-full object-cover">
+                                            @php
+                                                $comentFotoNome = $comentario->autor->foto ?? null;
+                                                $comentFotoUrl = $comentFotoNome ? route('imagem.foto', ['filename' => $comentFotoNome]) : null;
+                                                $comentInicial = $comentario->autor ? substr($comentario->autor->nome, 0, 1) : '?';
+                                            @endphp
+                                            
+                                            @if($comentFotoUrl)
+                                                <img src="{{ $comentFotoUrl }}" 
+                                                     alt="" 
+                                                     class="w-full h-full object-cover"
+                                                     onerror="this.style.display='none'; this.parentElement.textContent='{{ $comentInicial }}';">
                                             @else
-                                                {{ $comentario->autor ? substr($comentario->autor->nome, 0, 1) : '?' }}
+                                                {{ $comentInicial }}
                                             @endif
                                         </div>
                                         <div class="flex-1">
@@ -125,7 +153,7 @@
                                                 {{ $comentario->conteudo }}
                                             </p>
                                         </div>
-                                        @if(auth()->check() && (auth()->user()->matricula == $comentario->filiado_matricula || auth()->user()->isAdmin()))
+                                        @if(auth()->check() && (auth()->user()->matricula == $comentario->filiado_matricula || auth()->user()->pode('excluir_membro')))
                                             <button onclick="deletarComentario({{ $comentario->id }})" 
                                                     class="text-gray-400 hover:text-red-500 transition text-xs">
                                                 <i class="fas fa-times"></i>
@@ -187,7 +215,6 @@
                 const span = document.getElementById(`curtidas-${id}`);
                 if (span) span.textContent = data.total;
                 
-                // Atualiza cor do botão
                 const btn = event.target.closest('button');
                 if (btn) {
                     if (data.curtido) {
@@ -221,7 +248,6 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Recarrega a página para mostrar o novo comentário
                 window.location.reload();
             } else {
                 alert(data.message || 'Erro ao comentar.');
@@ -307,7 +333,6 @@
         .catch(error => console.error('Erro:', error));
     }
 
-    // Enter para comentar
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const target = e.target;

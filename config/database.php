@@ -67,26 +67,7 @@ return [
             ]) : [],
         ],
 
-        // ============================================================
-        // CONEXÃO COM O BANCO ANTIGO (SISTEMA LEGADO - ADTC2)
-        // ============================================================
-        'sistema_antigo' => [
-            'driver' => 'mysql',
-            'host' => env('DB_ANTIGO_HOST', '127.0.0.1'),
-            'port' => env('DB_ANTIGO_PORT', '3306'),
-            'database' => env('DB_ANTIGO_DATABASE', 'adtc2m99_adtc2'),
-            'username' => env('DB_ANTIGO_USERNAME', 'adtc2m99_adtc2'),
-            'password' => env('DB_ANTIGO_PASSWORD', ''),
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ],
+
 
         'mariadb' => [
             'driver' => 'mariadb',

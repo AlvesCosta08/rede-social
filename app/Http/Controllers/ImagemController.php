@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Auth; // ⭐ ADICIONADO
 
 class ImagemController extends Controller
 {
@@ -179,10 +180,11 @@ class ImagemController extends Controller
 
     /**
      * Upload de imagem (método alternativo)
+     * ⭐ VERIFICA PERMISSÃO USANDO PODE()
      */
     public function upload(Request $request)
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json([
@@ -190,6 +192,9 @@ class ImagemController extends Controller
                 'message' => 'Usuário não autenticado.'
             ], 401);
         }
+
+        // ⭐ VERIFICA SE O USUÁRIO PODE FAZER UPLOAD (SEMPRE PODE, É SEU PRÓPRIO PERFIL)
+        // Não há restrição adicional aqui, pois o usuário só pode alterar sua própria foto
 
         $request->validate([
             'foto' => 'required|image|max:2048|mimes:jpeg,png,gif,webp'

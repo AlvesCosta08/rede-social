@@ -8,7 +8,6 @@
 <style>
     .feed-container { max-width: 700px; margin: 0 auto; }
 
-    /* ===== NAVEGAÇÃO DO FEED ===== */
     .feed-nav {
         display: flex;
         gap: 10px;
@@ -56,7 +55,6 @@
         margin-left: 6px;
     }
 
-    /* ===== BARRA DE BUSCA DE MEMBROS ===== */
     .busca-membros {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -67,15 +65,10 @@
         transition: var(--transition);
     }
 
-    .busca-membros:hover {
-        box-shadow: var(--shadow-hover);
-    }
-
     .busca-membros .input-group {
         display: flex;
         gap: 10px;
         align-items: center;
-        position: relative;
     }
 
     .busca-membros .input-group input {
@@ -112,7 +105,6 @@
         box-shadow: 0 4px 16px rgba(108, 60, 225, 0.3);
     }
 
-    /* ===== RESULTADOS DA BUSCA ===== */
     .resultados-busca {
         display: none;
         background: var(--bg-card);
@@ -143,10 +135,6 @@
 
     .resultados-busca .item:hover {
         background: rgba(108, 60, 225, 0.05);
-    }
-
-    .resultados-busca .item:last-child {
-        border-bottom: none;
     }
 
     .resultados-busca .item .avatar {
@@ -184,10 +172,6 @@
         color: var(--text-secondary);
     }
 
-    .resultados-busca .item .info .detalhes i {
-        margin-right: 4px;
-    }
-
     .resultados-busca .item .info .badge-funcao {
         display: inline-block;
         margin-left: 8px;
@@ -211,7 +195,6 @@
         display: block;
     }
 
-    /* ===== NOVA PUBLICAÇÃO ===== */
     .nova-publicacao {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -220,10 +203,6 @@
         margin-bottom: 24px;
         border: 1px solid var(--border);
         transition: var(--transition);
-    }
-
-    .nova-publicacao:hover {
-        box-shadow: var(--shadow-hover);
     }
 
     .nova-publicacao .autor-info {
@@ -277,11 +256,6 @@
         box-shadow: 0 0 0 4px rgba(108, 60, 225, 0.1);
     }
 
-    .nova-publicacao textarea::placeholder {
-        color: var(--text-secondary);
-        opacity: 0.6;
-    }
-
     .nova-publicacao .btn-publicar {
         margin-top: 14px;
         padding: 10px 28px;
@@ -314,7 +288,6 @@
         display: table;
     }
 
-    /* ===== PUBLICAÇÃO ===== */
     .publicacao {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -385,7 +358,7 @@
     .publicacao .header .btn-delete {
         background: none;
         border: none;
-        color: var(--danger);
+        color: #e74c3c;
         cursor: pointer;
         font-size: 0.9rem;
         opacity: 0.4;
@@ -429,7 +402,6 @@
         padding: 6px 14px;
         border-radius: 20px;
         font-weight: 500;
-        position: relative;
     }
 
     .publicacao .acoes button:hover {
@@ -447,7 +419,7 @@
 
     @keyframes heartBurst {
         0% { transform: scale(1); }
-        25% { transform: scale(1.4); color: #e74c3c; }
+        25% { transform: scale(1.4); }
         50% { transform: scale(0.9); }
         75% { transform: scale(1.2); }
         100% { transform: scale(1); }
@@ -456,7 +428,6 @@
     .publicacao .acoes button .curtidas-count {
         min-width: 20px;
         display: inline-block;
-        transition: var(--transition);
     }
 
     .publicacao .comentarios {
@@ -576,6 +547,23 @@
     .sem-publicacoes h3 { font-size: 1.3rem; margin-bottom: 8px; }
     .sem-publicacoes p { font-size: 0.9rem; opacity: 0.7; }
 
+    .sem-publicacoes .btn-descobrir {
+        display: inline-block;
+        margin-top: 16px;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+
+    .sem-publicacoes .btn-descobrir:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(108, 60, 225, 0.3);
+    }
+
     .toast-curtida {
         position: fixed;
         bottom: 30px;
@@ -602,7 +590,6 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ===== LOADING ===== */
     .loading-spinner {
         display: none;
         text-align: center;
@@ -618,6 +605,12 @@
     @keyframes spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
+    }
+
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
     }
 
     @media (max-width: 480px) {
@@ -638,9 +631,7 @@
     <div class="feed-nav">
         <a href="{{ route('feed.index') }}" class="{{ request()->routeIs('feed.index') ? 'active' : '' }}">
             <i class="fas fa-rss"></i> Seguindo
-            @if(isset($membro))
-                <span class="badge-seguindo">{{ $membro->seguindo_count ?? 0 }}</span>
-            @endif
+            <span class="badge-seguindo">{{ $membro->seguindo_count ?? 0 }}</span>
         </a>
         <a href="{{ route('feed.global') }}" class="{{ request()->routeIs('feed.global') ? 'active' : '' }}">
             <i class="fas fa-globe"></i> Global
@@ -668,15 +659,22 @@
     </div>
 
     <!-- ===== NOVA PUBLICAÇÃO ===== -->
-    @if(isset($membro))
     <div class="nova-publicacao">
         <div class="autor-info">
-            @if($membro->foto)
+            @php
+                $fotoNome = $membro->foto ?? null;
+                $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                $inicial = substr($membro->nome, 0, 1);
+            @endphp
+            
+            @if($fotoUrl)
                 <div class="avatar">
-                    <img src="{{ route('imagem.foto', $membro->foto) }}" alt="{{ $membro->nome }}">
+                    <img src="{{ $fotoUrl }}" 
+                         alt="{{ $membro->nome }}"
+                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $inicial }}';">
                 </div>
             @else
-                <div class="avatar">{{ substr($membro->nome, 0, 1) }}</div>
+                <div class="avatar">{{ $inicial }}</div>
             @endif
             <div>
                 <div class="nome">{{ $membro->nome }}</div>
@@ -693,7 +691,6 @@
             </div>
         </form>
     </div>
-    @endif
 
     <!-- ===== PUBLICAÇÕES ===== -->
     <div id="feedContainer">
@@ -701,22 +698,31 @@
             @foreach($publicacoes as $publicacao)
                 <div class="publicacao" id="publicacao-{{ $publicacao->id }}" data-id="{{ $publicacao->id }}">
                     <div class="header">
-                        <a href="{{ route('perfil.show', $publicacao->autor->matricula) }}" class="autor">
-                            @if($publicacao->autor->foto)
+                        <a href="{{ route('perfil.show', $publicacao->autor->matricula ?? $publicacao->filiado_matricula) }}" class="autor">
+                            @php
+                                $autorFotoNome = $publicacao->autor->foto ?? null;
+                                $autorFotoUrl = $autorFotoNome ? route('imagem.foto', ['filename' => $autorFotoNome]) : null;
+                                $autorInicial = substr($publicacao->autor->nome ?? 'U', 0, 1);
+                            @endphp
+                            
+                            @if($autorFotoUrl)
                                 <div class="avatar">
-                                    <img src="{{ route('imagem.foto', $publicacao->autor->foto) }}" alt="{{ $publicacao->autor->nome }}">
+                                    <img src="{{ $autorFotoUrl }}" 
+                                         alt="{{ $publicacao->autor->nome ?? 'Usuário' }}"
+                                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $autorInicial }}';">
                                 </div>
                             @else
-                                <div class="avatar">{{ substr($publicacao->autor->nome, 0, 1) }}</div>
+                                <div class="avatar">{{ $autorInicial }}</div>
                             @endif
                             <div>
-                                <div class="nome">{{ $publicacao->autor->nome }}</div>
+                                <div class="nome">{{ $publicacao->autor->nome ?? 'Usuário' }}</div>
                                 <div class="funcao">{{ $publicacao->autor->funcao ?? 'Membro' }}</div>
                             </div>
                         </a>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span class="data">{{ $publicacao->created_at->diffForHumans() }}</span>
-                            @if(isset($membro) && $publicacao->filiado_matricula == $membro->matricula)
+                            {{-- ⭐ DELETAR: PRÓPRIO USUÁRIO OU ADMIN/SECRETÁRIO --}}
+                            @if($publicacao->filiado_matricula == $membro->matricula || auth()->user()?->pode('excluir_membro'))
                                 <button type="button" class="btn-delete" data-id="{{ $publicacao->id }}" title="Remover publicação">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -728,7 +734,7 @@
 
                     <div class="acoes">
                         <button type="button" 
-                                class="btn-curtir {{ isset($membro) && $publicacao->isCurtidoPor($membro) ? 'curtido' : '' }}" 
+                                class="btn-curtir {{ $publicacao->isCurtidoPor($membro) ? 'curtido' : '' }}" 
                                 data-id="{{ $publicacao->id }}">
                             <i class="fas fa-heart"></i>
                             <span class="curtidas-count" id="curtidas-{{ $publicacao->id }}">{{ $publicacao->curtidas->count() }}</span>
@@ -743,12 +749,20 @@
                         <div id="comentarios-lista-{{ $publicacao->id }}">
                             @foreach($publicacao->comentarios as $comentario)
                                 <div class="comentario" id="comentario-{{ $comentario->id }}">
-                                    @if($comentario->autor && $comentario->autor->foto)
+                                    @php
+                                        $comentFotoNome = $comentario->autor->foto ?? null;
+                                        $comentFotoUrl = $comentFotoNome ? route('imagem.foto', ['filename' => $comentFotoNome]) : null;
+                                        $comentInicial = substr($comentario->autor->nome ?? '?', 0, 1);
+                                    @endphp
+                                    
+                                    @if($comentFotoUrl)
                                         <div class="avatar-mini">
-                                            <img src="{{ route('imagem.foto', $comentario->autor->foto) }}" alt="{{ $comentario->autor->nome }}">
+                                            <img src="{{ $comentFotoUrl }}" 
+                                                 alt="{{ $comentario->autor->nome ?? 'Usuário' }}"
+                                                 onerror="this.style.display='none'; this.parentElement.textContent='{{ $comentInicial }}';">
                                         </div>
                                     @elseif($comentario->autor)
-                                        <div class="avatar-mini">{{ substr($comentario->autor->nome, 0, 1) }}</div>
+                                        <div class="avatar-mini">{{ $comentInicial }}</div>
                                     @else
                                         <div class="avatar-mini">?</div>
                                     @endif
@@ -771,11 +785,29 @@
                     </div>
                 </div>
             @endforeach
+
+            <!-- ===== PAGINAÇÃO ===== -->
+            <div class="pagination-wrapper">
+                {{ $publicacoes->links() }}
+            </div>
+
         @else
             <div class="sem-publicacoes" id="semPublicacoes">
                 <i class="fas fa-comment-dots"></i>
                 <h3>Nenhuma publicação ainda</h3>
-                <p>Ninguém publicou nada ainda. Seja o primeiro!</p>
+                <p>
+                    @if($membro->seguindo_count == 0)
+                        Você ainda não segue ninguém. 
+                        <br>Use a busca acima para encontrar membros da comunidade!
+                    @else
+                        Ninguém que você segue publicou nada ainda.
+                    @endif
+                </p>
+                @if($membro->seguindo_count == 0)
+                    <a href="{{ route('membros.index') }}" class="btn-descobrir">
+                        <i class="fas fa-users"></i> Descobrir membros
+                    </a>
+                @endif
             </div>
         @endif
     </div>
@@ -786,17 +818,13 @@
     <i class="fas fa-heart" style="color: #e74c3c;"></i>
     <span id="toastCurtidaMessage">Você curtiu esta publicação!</span>
 </div>
+@endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
-    console.log('🌍 Feed carregado - AJAX configurado com segurança!');
-
-    // ===== CSRF TOKEN =====
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-    // ===== FUNÇÃO AUXILIAR PARA VALIDAR RESPOSTA JSON =====
     async function checkJsonResponse(response) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
@@ -804,11 +832,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const text = await response.text();
         console.error('Resposta HTML recebida:', text.substring(0, 200));
-        throw new Error(`Erro do servidor (${response.status}). Sua sessão pode ter expirado. Faça login novamente.`);
+        throw new Error(`Erro do servidor (${response.status}). Faça login novamente.`);
     }
 
     // ============================================================
-    // BUSCA DE MEMBROS (AJAX)
+    // BUSCA DE MEMBROS
     // ============================================================
     const buscaInput = document.getElementById('buscaMembros');
     const resultadosDiv = document.getElementById('resultadosBusca');
@@ -857,17 +885,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let html = '';
             data.forEach(membro => {
+                // ⭐ CORRIGIDO: Usa a URL correta da imagem
                 const fotoHtml = membro.foto 
                     ? `<img src="${membro.foto}" alt="${membro.nome}">` 
                     : membro.nome.charAt(0);
                 
                 html += `
-                    <a href="{{ url('/') }}/perfil/${membro.id}" class="item">
+                    <a href="{{ url('/') }}/perfil/${membro.matricula}" class="item">
                         <div class="avatar">${fotoHtml}</div>
                         <div class="info">
                             <div class="nome">${membro.nome}</div>
                             <div class="detalhes">
-                                <i class="fas fa-id-card"></i> Mat: ${membro.id}
+                                <i class="fas fa-id-card"></i> Mat: ${membro.matricula}
                                 ${membro.cidade ? ` • <i class="fas fa-map-marker-alt"></i> ${membro.cidade}` : ''}
                                 <span class="badge-funcao">${membro.funcao || 'Membro'}</span>
                             </div>
@@ -943,7 +972,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // CURTIR PUBLICAÇÃO (AJAX)
+    // CURTIR PUBLICAÇÃO
     // ============================================================
     document.querySelectorAll('.btn-curtir').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -997,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // COMENTAR PUBLICAÇÃO (AJAX)
+    // COMENTAR PUBLICAÇÃO
     // ============================================================
     document.querySelectorAll('.form-comentario').forEach(form => {
         form.addEventListener('submit', function(e) {
@@ -1068,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // DELETAR PUBLICAÇÃO (AJAX)
+    // DELETAR PUBLICAÇÃO
     // ============================================================
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -1115,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // PUBLICAR NOVA (AJAX)
+    // PUBLICAR NOVA
     // ============================================================
     const formPublicacao = document.getElementById('formPublicacao');
     const btnPublicar = document.getElementById('btnPublicar');
@@ -1152,235 +1181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(checkJsonResponse)
             .then(data => {
                 if (data.success) {
-                    const container = document.getElementById('feedContainer');
-                    const semPublicacoes = document.getElementById('semPublicacoes');
-                    
-                    const fotoUrl = data.autor_foto ? `/imagens/fotos/${data.autor_foto}` : null;
-                    const fotoHtml = fotoUrl 
-                        ? `<img src="${fotoUrl}" alt="${data.autor_nome}">` 
-                        : data.autor_nome.charAt(0);
-                    
-                    const novaPublicacao = document.createElement('div');
-                    novaPublicacao.className = 'publicacao';
-                    novaPublicacao.id = `publicacao-${data.id}`;
-                    novaPublicacao.style.animation = 'fadeIn 0.4s ease';
-                    novaPublicacao.innerHTML = `
-                        <div class="header">
-                            <a href="{{ url('/') }}/perfil/${data.autor_matricula}" class="autor">
-                                <div class="avatar">${fotoHtml}</div>
-                                <div>
-                                    <div class="nome">${data.autor_nome}</div>
-                                    <div class="funcao">${data.autor_funcao || 'Membro'}</div>
-                                </div>
-                            </a>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span class="data">Agora mesmo</span>
-                                <button type="button" class="btn-delete" data-id="${data.id}" title="Remover publicação">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="conteudo">${data.conteudo}</div>
-                        <div class="acoes">
-                            <button type="button" class="btn-curtir" data-id="${data.id}">
-                                <i class="fas fa-heart"></i>
-                                <span class="curtidas-count" id="curtidas-${data.id}">0</span>
-                            </button>
-                            <button type="button" class="btn-comentar" data-id="${data.id}">
-                                <i class="fas fa-comment"></i>
-                                <span id="comentarios-count-${data.id}">0</span>
-                            </button>
-                        </div>
-                        <div class="comentarios" id="comentarios-${data.id}">
-                            <div id="comentarios-lista-${data.id}"></div>
-                            <form method="POST" action="/feed/${data.id}/comentar" class="form-comentario" data-id="${data.id}">
-                                <input type="hidden" name="_token" value="${csrfToken}">
-                                <input type="text" name="conteudo" placeholder="Escreva um comentário..." required>
-                                <button type="submit"><i class="fas fa-paper-plane"></i></button>
-                            </form>
-                        </div>
-                    `;
-                    
-                    if (semPublicacoes) {
-                        container.innerHTML = '';
-                    }
-                    container.prepend(novaPublicacao);
-                    textarea.value = '';
-                    
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                    // Reaplicar eventos aos novos botões
-                    novaPublicacao.querySelectorAll('.btn-curtir').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const id = this.dataset.id;
-                            const span = document.getElementById(`curtidas-${id}`);
-                            const toast = document.getElementById('toastCurtida');
-                            const toastMessage = document.getElementById('toastCurtidaMessage');
-                            
-                            this.style.pointerEvents = 'none';
-                            this.style.opacity = '0.6';
-
-                            const url = '{{ route("feed.curtir", ["id" => 0]) }}'.replace('0', id);
-
-                            fetch(url, {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': csrfToken,
-                                    'Accept': 'application/json',
-                                    'Content-Type': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            })
-                            .then(checkJsonResponse)
-                            .then(data => {
-                                if (data.success) {
-                                    span.textContent = data.curtidas;
-                                    this.classList.toggle('curtido');
-
-                                    if (this.classList.contains('curtido')) {
-                                        toastMessage.textContent = 'Você curtiu esta publicação! ❤️';
-                                        toast.className = 'toast-curtida curtido';
-                                    } else {
-                                        toastMessage.textContent = 'Você descurtiu esta publicação.';
-                                        toast.className = 'toast-curtida descurtido';
-                                    }
-                                    
-                                    toast.style.display = 'block';
-                                    clearTimeout(toast._timeout);
-                                    toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 2000);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('❌ Erro ao curtir:', error);
-                                alert(error.message);
-                            })
-                            .finally(() => {
-                                this.style.pointerEvents = 'auto';
-                                this.style.opacity = '1';
-                            });
-                        });
-                    });
-
-                    novaPublicacao.querySelectorAll('.btn-comentar').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const id = this.dataset.id;
-                            const div = document.getElementById('comentarios-' + id);
-                            div.classList.toggle('open');
-                            div.style.display = div.classList.contains('open') ? 'block' : 'none';
-                        });
-                    });
-
-                    novaPublicacao.querySelectorAll('.btn-delete').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const id = this.dataset.id;
-                            if (!confirm('Remover esta publicação?')) return;
-
-                            const url = '{{ route("feed.delete", ["id" => 0]) }}'.replace('0', id);
-
-                            fetch(url, {
-                                method: 'DELETE',
-                                headers: {
-                                    'X-CSRF-TOKEN': csrfToken,
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            })
-                            .then(checkJsonResponse)
-                            .then(data => {
-                                if (data.success) {
-                                    const elemento = document.getElementById(`publicacao-${id}`);
-                                    elemento.style.transition = 'all 0.3s ease';
-                                    elemento.style.opacity = '0';
-                                    elemento.style.transform = 'scale(0.9)';
-                                    setTimeout(() => {
-                                        elemento.remove();
-                                        const restantes = document.querySelectorAll('.publicacao').length;
-                                        if (restantes === 0) {
-                                            document.getElementById('feedContainer').innerHTML = `
-                                                <div class="sem-publicacoes" id="semPublicacoes">
-                                                    <i class="fas fa-comment-dots"></i>
-                                                    <h3>Nenhuma publicação ainda</h3>
-                                                    <p>Ninguém publicou nada ainda. Seja o primeiro!</p>
-                                                </div>
-                                            `;
-                                        }
-                                    }, 300);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('❌ Erro ao deletar:', error);
-                                alert(error.message);
-                            });
-                        });
-                    });
-
-                    novaPublicacao.querySelectorAll('.form-comentario').forEach(form => {
-                        form.addEventListener('submit', function(e) {
-                            e.preventDefault();
-                            
-                            const id = this.dataset.id;
-                            const input = this.querySelector('input[name="conteudo"]');
-                            const conteudo = input.value.trim();
-                            
-                            if (!conteudo) return;
-
-                            const formData = new FormData(this);
-                            const url = '{{ route("feed.comentar", ["id" => 0]) }}'.replace('0', id);
-
-                            fetch(url, {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': csrfToken,
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: formData
-                            })
-                            .then(checkJsonResponse)
-                            .then(data => {
-                                if (data.success) {
-                                    const lista = document.getElementById('comentarios-lista-' + id);
-                                    const novoComentario = document.createElement('div');
-                                    novoComentario.className = 'comentario';
-                                    novoComentario.style.animation = 'fadeIn 0.3s ease';
-                                    
-                                    const fotoUrl = data.autor_foto ? `/imagens/fotos/${data.autor_foto}` : null;
-                                    const fotoHtml = fotoUrl 
-                                        ? `<img src="${fotoUrl}" alt="${data.autor_nome}">` 
-                                        : data.autor_inicial;
-                                    
-                                    novoComentario.innerHTML = `
-                                        <div class="avatar-mini">${fotoHtml}</div>
-                                        <div class="conteudo">
-                                            <span class="nome-autor">${data.autor_nome}</span>
-                                            ${data.conteudo}
-                                            <div style="font-size: 0.7rem; color: var(--text-secondary); opacity: 0.5; margin-top: 2px;">
-                                                Agora mesmo
-                                            </div>
-                                        </div>
-                                    `;
-                                    
-                                    lista.appendChild(novoComentario);
-                                    input.value = '';
-
-                                    const spanComentarios = document.getElementById(`comentarios-count-${id}`);
-                                    spanComentarios.textContent = lista.querySelectorAll('.comentario').length;
-
-                                    const container = document.getElementById('comentarios-' + id);
-                                    container.classList.add('open');
-                                    container.style.display = 'block';
-                                    
-                                    setTimeout(() => {
-                                        novoComentario.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                    }, 200);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('❌ Erro ao comentar:', error);
-                                alert(error.message);
-                            });
-                        });
-                    });
+                    location.reload();
                 }
             })
             .catch(error => {
@@ -1395,20 +1196,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================================================
-    // GARANTIR CSRF EM FORMULÁRIOS DINÂMICOS
-    // ============================================================
-    document.querySelectorAll('form').forEach(form => {
-        if (!form.querySelector('input[name="_token"]')) {
-            const token = document.createElement('input');
-            token.type = 'hidden';
-            token.name = '_token';
-            token.value = csrfToken;
-            form.appendChild(token);
-        }
-    });
-
-    // ============================================================
-    // AUTO-FECHAR TOASTS DO LARAVEL
+    // AUTO-FECHAR TOASTS
     // ============================================================
     document.querySelectorAll('.toast, .alert').forEach(el => {
         setTimeout(() => {
@@ -1419,7 +1207,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
 
+    console.log('📱 Feed carregado');
+    console.log('👤 Usuário: {{ $membro->nome }}');
+    console.log('📊 Seguindo: {{ $membro->seguindo_count ?? 0 }}');
+    console.log('📄 Publicações: {{ $publicacoes->count() }}');
 });
 </script>
 @endpush
-@endsection

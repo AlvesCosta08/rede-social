@@ -13,10 +13,11 @@ class SeguidorController extends Controller
 {
     /**
      * Seguir um membro
+     * ⭐ QUALQUER USUÁRIO AUTENTICADO PODE SEGUIR
      */
     public function seguir($matricula)
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json([
@@ -66,7 +67,8 @@ class SeguidorController extends Controller
 
             Log::info('✅ Seguindo membro', [
                 'seguidor' => $user->matricula,
-                'seguido' => $matricula
+                'seguido' => $matricula,
+                'nivel' => $user->nivel ?? 'usuario'
             ]);
 
             return response()->json([
@@ -95,7 +97,7 @@ class SeguidorController extends Controller
      */
     public function deixarSeguir($matricula)
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json([
@@ -135,7 +137,8 @@ class SeguidorController extends Controller
 
             Log::info('✅ Deixou de seguir', [
                 'seguidor' => $user->matricula,
-                'seguido' => $matricula
+                'seguido' => $matricula,
+                'nivel' => $user->nivel ?? 'usuario'
             ]);
 
             return response()->json([
@@ -161,10 +164,11 @@ class SeguidorController extends Controller
 
     /**
      * Sugerir membros para seguir
+     * ⭐ QUALQUER USUÁRIO AUTENTICADO PODE VER SUGESTÕES
      */
     public function sugerir()
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json([
@@ -189,6 +193,12 @@ class SeguidorController extends Controller
                 ->inRandomOrder()
                 ->limit(10)
                 ->get(['matricula', 'nome', 'foto', 'funcao', 'cidade']);
+
+            Log::info('📋 Sugestões de membros', [
+                'matricula' => $user->matricula,
+                'total' => $sugestoes->count(),
+                'nivel' => $user->nivel ?? 'usuario'
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -219,11 +229,25 @@ class SeguidorController extends Controller
 
     /**
      * Listar quem um membro está seguindo
+     * ⭐ VERIFICA PERMISSÃO PARA VER SEGUINDO DE OUTROS
      */
     public function seguindo($matricula)
     {
         try {
             $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
+
+            // ⭐ VERIFICA SE O USUÁRIO LOGADO PODE VER SEGUINDO DE OUTROS
+            $user = Auth::user();
+            
+            // Se o perfil for privado e não for o próprio usuário, verifica permissão
+            if ($membro->privacidade && $user && $user->matricula !== $matricula) {
+                if (!$user->pode('ver_membro', $membro)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Este perfil é privado.'
+                    ], 403);
+                }
+            }
 
             $seguindo = Seguidor::on('mysql')
                 ->where('seguidor_matricula', $matricula)
@@ -232,6 +256,12 @@ class SeguidorController extends Controller
                 }])
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
+
+            Log::info('📋 Lista de seguindo', [
+                'matricula' => $matricula,
+                'total' => $seguindo->total(),
+                'visualizado_por' => $user?->matricula ?? 'anonimo'
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -268,11 +298,25 @@ class SeguidorController extends Controller
 
     /**
      * Listar seguidores de um membro
+     * ⭐ VERIFICA PERMISSÃO PARA VER SEGUIDORES DE OUTROS
      */
     public function seguidores($matricula)
     {
         try {
             $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
+
+            // ⭐ VERIFICA SE O USUÁRIO LOGADO PODE VER SEGUIDORES DE OUTROS
+            $user = Auth::user();
+            
+            // Se o perfil for privado e não for o próprio usuário, verifica permissão
+            if ($membro->privacidade && $user && $user->matricula !== $matricula) {
+                if (!$user->pode('ver_membro', $membro)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Este perfil é privado.'
+                    ], 403);
+                }
+            }
 
             $seguidores = Seguidor::on('mysql')
                 ->where('seguido_matricula', $matricula)
@@ -281,6 +325,12 @@ class SeguidorController extends Controller
                 }])
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
+
+            Log::info('📋 Lista de seguidores', [
+                'matricula' => $matricula,
+                'total' => $seguidores->total(),
+                'visualizado_por' => $user?->matricula ?? 'anonimo'
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -332,6 +382,12 @@ class SeguidorController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('❌ Erro ao verificar segue', [
+                'seguidor' => $seguidor,
+                'seguido' => $seguido,
+                'error' => $e->getMessage()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao verificar.'

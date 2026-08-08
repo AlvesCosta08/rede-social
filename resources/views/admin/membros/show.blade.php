@@ -39,6 +39,22 @@
         font-size: 2.5rem;
         color: white;
         flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .member-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .member-avatar .avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-size: 2.5rem;
     }
 
     .member-header-info {
@@ -68,6 +84,20 @@
         background: rgba(255,255,255,0.2);
         color: white;
         margin-top: 8px;
+    }
+
+    .member-header-info .nivel-badge {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 8px;
+        margin-left: 8px;
+        background: rgba(255,255,255,0.3);
+        color: white;
     }
 
     .member-body {
@@ -195,6 +225,29 @@
         color: white;
     }
 
+    .btn-admin-success {
+        background: linear-gradient(145deg, #4caf50, #388e3c);
+    }
+
+    .btn-admin-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        color: white;
+    }
+
+    .alert-danger {
+        background: #ffebee;
+        color: #c62828;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border-left: 4px solid #c62828;
+    }
+
+    .alert-danger .btn-admin {
+        margin-top: 10px;
+    }
+
     @media (max-width: 768px) {
         .member-header {
             flex-direction: column;
@@ -219,176 +272,232 @@
 
 @section('content')
 <div class="member-detail-container">
-    <div class="member-card">
-        <!-- Header -->
-        <div class="member-header">
-            <div class="member-avatar">
-                👤
-            </div>
-            <div class="member-header-info">
-                <h1>{{ $membro->nome }}</h1>
-                <p class="matricula">Matrícula #{{ $membro->matricula }}</p>
-                <span class="status-badge">{{ $membro->status ?? 'INATIVO' }}</span>
-            </div>
+    {{-- ⭐ VERIFICA PERMISSÃO --}}
+    @if(!auth()->user()?->pode('ver_membro', $membro))
+        <div class="alert-danger">
+            <strong>⛔ Acesso Negado</strong>
+            <p>Você não tem permissão para visualizar os detalhes deste membro.</p>
+            <a href="{{ route('admin.membros.index') }}" class="btn-admin btn-admin-secondary" style="display: inline-block;">
+                <span>🔙</span> Voltar
+            </a>
         </div>
-
-        <!-- Body -->
-        <div class="member-body">
-            <div class="info-grid">
-                <!-- Dados Pessoais -->
-                <div class="info-item">
-                    <div class="label">📋 Matrícula</div>
-                    <div class="value">#{{ $membro->matricula }}</div>
+    @else
+        <div class="member-card">
+            <!-- Header -->
+            <div class="member-header">
+                <div class="member-avatar">
+                    @php
+                        $fotoNome = $membro->foto ?? null;
+                        $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                        $inicial = substr($membro->nome, 0, 1);
+                    @endphp
+                    
+                    @if($fotoUrl)
+                        <img src="{{ $fotoUrl }}" 
+                             alt="{{ $membro->nome }}"
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\'avatar-placeholder\'>{{ $inicial }}</span>';">
+                    @else
+                        <span class="avatar-placeholder">{{ $inicial }}</span>
+                    @endif
                 </div>
-
-                <div class="info-item">
-                    <div class="label">👤 Nome Completo</div>
-                    <div class="value">{{ $membro->nome }}</div>
-                </div>
-
-                @if($membro->nome_carteira)
-                <div class="info-item">
-                    <div class="label">📛 Nome para Carteira</div>
-                    <div class="value">{{ $membro->nome_carteira }}</div>
-                </div>
-                @endif
-
-                <div class="info-item">
-                    <div class="label">📧 E-mail</div>
-                    <div class="value">{{ $membro->email ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">📱 Telefone</div>
-                    <div class="value">{{ $membro->telefone ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">🆔 Documento</div>
-                    <div class="value">{{ $membro->documento ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">🎂 Data de Nascimento</div>
-                    <div class="value">{{ $membro->dataNascimento ? date('d/m/Y', strtotime($membro->dataNascimento)) : '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">💍 Estado Civil</div>
-                    <div class="value">{{ $membro->estadoCivil ?? '—' }}</div>
-                </div>
-
-                @if($membro->mae)
-                <div class="info-item">
-                    <div class="label">👩 Mãe</div>
-                    <div class="value">{{ $membro->mae }}</div>
-                </div>
-                @endif
-
-                @if($membro->pai)
-                <div class="info-item">
-                    <div class="label">👨 Pai</div>
-                    <div class="value">{{ $membro->pai }}</div>
-                </div>
-                @endif
-
-                <!-- Endereço -->
-                <div class="info-item">
-                    <div class="label">📍 Endereço</div>
-                    <div class="value">{{ $membro->endereco ?? '—' }}, {{ $membro->numero ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">🏘️ Bairro</div>
-                    <div class="value">{{ $membro->bairro ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">📮 CEP</div>
-                    <div class="value">{{ $membro->cep ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">🏙️ Cidade</div>
-                    <div class="value">{{ $membro->cidade ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">🗺️ UF</div>
-                    <div class="value">{{ $membro->uf ?? '—' }}</div>
-                </div>
-
-                <!-- Dados da Igreja -->
-                <div class="info-item">
-                    <div class="label">⛪ Congregação</div>
-                    <div class="value">{{ $membro->congregacao ?? '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">📌 Função</div>
-                    <div class="value">{{ $membro->funcao ?? '—' }}</div>
-                </div>
-
-                @if($membro->dataBatismo)
-                <div class="info-item">
-                    <div class="label">💧 Data do Batismo</div>
-                    <div class="value">{{ date('d/m/Y', strtotime($membro->dataBatismo)) }}</div>
-                </div>
-                @endif
-
-                @if($membro->data_Consagracao)
-                <div class="info-item">
-                    <div class="label">🕊️ Data da Consagração</div>
-                    <div class="value">{{ date('d/m/Y', strtotime($membro->data_Consagracao)) }}</div>
-                </div>
-                @endif
-
-                <div class="info-item">
-                    <div class="label">📅 Data de Cadastro</div>
-                    <div class="value">{{ $membro->created_at ? $membro->created_at->format('d/m/Y H:i') : '—' }}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="label">🔔 Status</div>
-                    <div class="value">
-                        <span class="status-badge status-{{ strtolower($membro->status ?? 'inativo') }}">
-                            {{ $membro->status ?? 'INATIVO' }}
-                        </span>
+                <div class="member-header-info">
+                    <h1>{{ $membro->nome }}</h1>
+                    <p class="matricula">Matrícula #{{ $membro->matricula }}</p>
+                    <div>
+                        <span class="status-badge">{{ $membro->status ?? 'INATIVO' }}</span>
+                        
+                        {{-- ⭐ BADGE DE NÍVEL --}}
+                        @if(isset($membro->nivel))
+                            <span class="nivel-badge">
+                                @if($membro->nivel === 'admin')
+                                    👑 Administrador
+                                @elseif($membro->nivel === 'secretario')
+                                    📋 Secretário
+                                @else
+                                    👤 Membro
+                                @endif
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>
 
-            <!-- Biografia -->
-            @if($membro->bio)
-            <div class="bio-section">
-                <div class="label">📝 Biografia / Notas</div>
-                <div class="value">{{ $membro->bio }}</div>
-            </div>
-            @endif
+            <!-- Body -->
+            <div class="member-body">
+                <div class="info-grid">
+                    <!-- Dados Pessoais -->
+                    <div class="info-item">
+                        <div class="label">📋 Matrícula</div>
+                        <div class="value">#{{ $membro->matricula }}</div>
+                    </div>
 
-            <!-- Actions -->
-            <div class="member-actions">
-                <a href="{{ route('admin.membros.edit', $membro->matricula) }}" class="btn-admin btn-admin-primary">
-                    <span>✏️</span> Editar Membro
-                </a>
-                <a href="{{ route('admin.membros.index') }}" class="btn-admin btn-admin-secondary">
-                    <span>🔙</span> Voltar
-                </a>
-                <form action="{{ route('admin.membros.destroy', $membro->matricula) }}" method="POST" style="display: inline; margin-left: auto;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn-admin btn-admin-danger" onclick="return confirm('Tem certeza que deseja remover o membro {{ $membro->nome }}?')">
-                        <span>🗑️</span> Remover Membro
-                    </button>
-                </form>
+                    <div class="info-item">
+                        <div class="label">👤 Nome Completo</div>
+                        <div class="value">{{ $membro->nome }}</div>
+                    </div>
+
+                    @if($membro->nome_carteira)
+                    <div class="info-item">
+                        <div class="label">📛 Nome para Carteira</div>
+                        <div class="value">{{ $membro->nome_carteira }}</div>
+                    </div>
+                    @endif
+
+                    <div class="info-item">
+                        <div class="label">📧 E-mail</div>
+                        <div class="value">{{ $membro->email ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">📱 Telefone</div>
+                        <div class="value">{{ $membro->telefone ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">🆔 Documento</div>
+                        <div class="value">{{ $membro->documento ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">🎂 Data de Nascimento</div>
+                        <div class="value">{{ $membro->dataNascimento ? date('d/m/Y', strtotime($membro->dataNascimento)) : '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">💍 Estado Civil</div>
+                        <div class="value">{{ $membro->estadoCivil ?? '—' }}</div>
+                    </div>
+
+                    @if($membro->mae)
+                    <div class="info-item">
+                        <div class="label">👩 Mãe</div>
+                        <div class="value">{{ $membro->mae }}</div>
+                    </div>
+                    @endif
+
+                    @if($membro->pai)
+                    <div class="info-item">
+                        <div class="label">👨 Pai</div>
+                        <div class="value">{{ $membro->pai }}</div>
+                    </div>
+                    @endif
+
+                    <!-- Endereço -->
+                    <div class="info-item">
+                        <div class="label">📍 Endereço</div>
+                        <div class="value">{{ $membro->endereco ?? '—' }}, {{ $membro->numero ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">🏘️ Bairro</div>
+                        <div class="value">{{ $membro->bairro ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">📮 CEP</div>
+                        <div class="value">{{ $membro->cep ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">🏙️ Cidade</div>
+                        <div class="value">{{ $membro->cidade ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">🗺️ UF</div>
+                        <div class="value">{{ $membro->uf ?? '—' }}</div>
+                    </div>
+
+                    <!-- Dados da Igreja -->
+                    <div class="info-item">
+                        <div class="label">⛪ Congregação</div>
+                        <div class="value">{{ $membro->congregacao ?? '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">📌 Função</div>
+                        <div class="value">{{ $membro->funcao ?? '—' }}</div>
+                    </div>
+
+                    @if($membro->dataBatismo)
+                    <div class="info-item">
+                        <div class="label">💧 Data do Batismo</div>
+                        <div class="value">{{ date('d/m/Y', strtotime($membro->dataBatismo)) }}</div>
+                    </div>
+                    @endif
+
+                    @if($membro->data_Consagracao)
+                    <div class="info-item">
+                        <div class="label">🕊️ Data da Consagração</div>
+                        <div class="value">{{ date('d/m/Y', strtotime($membro->data_Consagracao)) }}</div>
+                    </div>
+                    @endif
+
+                    <div class="info-item">
+                        <div class="label">📅 Data de Cadastro</div>
+                        <div class="value">{{ $membro->created_at ? $membro->created_at->format('d/m/Y H:i') : '—' }}</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="label">🔔 Status</div>
+                        <div class="value">
+                            <span class="status-badge status-{{ strtolower($membro->status ?? 'inativo') }}">
+                                {{ $membro->status ?? 'INATIVO' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biografia -->
+                @if($membro->bio)
+                <div class="bio-section">
+                    <div class="label">📝 Biografia / Notas</div>
+                    <div class="value">{{ $membro->bio }}</div>
+                </div>
+                @endif
+
+                <!-- Actions -->
+                <div class="member-actions">
+                    {{-- ⭐ VER POSTS - APENAS QUEM PODE VER DASHBOARD --}}
+                    @if(auth()->user()?->pode('dashboard'))
+                        <a href="{{ route('admin.membros.posts', $membro->matricula) }}" class="btn-admin btn-admin-success">
+                            <span>📝</span> Ver Posts
+                        </a>
+                    @endif
+
+                    {{-- ⭐ EDITAR - APENAS QUEM PODE EDITAR ESTE MEMBRO --}}
+                    @if(auth()->user()?->pode('editar_membro', $membro))
+                        <a href="{{ route('admin.membros.edit', $membro->matricula) }}" class="btn-admin btn-admin-primary">
+                            <span>✏️</span> Editar Membro
+                        </a>
+                    @endif
+
+                    <a href="{{ route('admin.membros.index') }}" class="btn-admin btn-admin-secondary">
+                        <span>🔙</span> Voltar
+                    </a>
+
+                    {{-- ⭐ REMOVER - APENAS ADMIN --}}
+                    @if(auth()->user()?->pode('excluir_membro'))
+                        <form action="{{ route('admin.membros.destroy', $membro->matricula) }}" method="POST" style="display: inline; margin-left: auto;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-admin btn-admin-danger" onclick="return confirm('Tem certeza que deseja remover o membro {{ addslashes($membro->nome) }}?')">
+                                <span>🗑️</span> Remover Membro
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
         </div>
-    </div>
+    @endif
 </div>
 
 @push('scripts')
 <script>
     console.log('👤 Visualizando membro: {{ $membro->nome }} (Matrícula #{{ $membro->matricula }})');
+    @if(isset($membro->nivel))
+        console.log('🏷️ Nível: {{ $membro->nivel }}');
+    @endif
 </script>
 @endpush
 @endsection

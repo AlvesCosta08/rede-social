@@ -397,14 +397,14 @@
     <!-- ===== CARD DO PERFIL ===== -->
     <div class="profile-card">
         <!-- ============================================================
-        ⭐ AVATAR - USA ROTA DO LARAVEL ⭐
+        ⭐ AVATAR - USA ROTA DO LARAVEL COM FALLBACK ⭐
         ============================================================ -->
         <div class="profile-avatar-wrapper">
             <div class="profile-avatar" id="avatarContainer">
                 @php
-                    // ⭐ USA A ROTA DO LARAVEL (MAIS SEGURA)
                     $fotoNome = $perfil->foto ?? null;
                     $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                    $inicial = substr($perfil->nome, 0, 1);
                 @endphp
                 
                 @if($fotoUrl)
@@ -412,9 +412,9 @@
                          alt="Foto de {{ $perfil->nome }}" 
                          id="fotoPerfil"
                          onerror="this.style.display='none'; document.getElementById('fotoPlaceholder').style.display='flex';">
-                    <span class="placeholder" id="fotoPlaceholder" style="display: none;">{{ substr($perfil->nome, 0, 1) }}</span>
+                    <span class="placeholder" id="fotoPlaceholder" style="display: none;">{{ $inicial }}</span>
                 @else
-                    <span class="placeholder" id="fotoPlaceholder">{{ substr($perfil->nome, 0, 1) }}</span>
+                    <span class="placeholder" id="fotoPlaceholder">{{ $inicial }}</span>
                 @endif
             </div>
 
@@ -423,6 +423,7 @@
                 <span>Trocar foto</span>
             </div>
 
+            {{-- ⭐ BOTÃO UPLOAD - APENAS O DONO DO PERFIL --}}
             @if($membroLogado && $membroLogado->matricula == $perfil->matricula)
                 <div class="btn-upload-avatar" id="btnUploadAvatar" title="Trocar foto">
                     <i class="fas fa-camera"></i>
@@ -472,7 +473,6 @@
                 <div class="label"><i class="fas fa-map-marker-alt"></i> Cidade/UF</div>
                 <div class="value">{{ $perfil->cidade ? $perfil->cidade . '/' . $perfil->uf : '-' }}</div>
             </div>
-            <!-- ===== DATA DE BATISMO ===== -->
             <div class="info-item">
                 <div class="label"><i class="fas fa-water"></i> Batismo</div>
                 <div class="value">
@@ -483,7 +483,6 @@
                     @endif
                 </div>
             </div>
-            <!-- ===== DATA DE CONSAGRAÇÃO (APENAS PARA FUNÇÕES MINISTERIAIS) ===== -->
             @php
                 $funcoesMinisteriais = ['Auxiliar', 'Obreiro', 'Diacono', 'Diácono', 'Presbitero', 'Presbítero', 'Evangelista', 'Pastor', 'Pastora', 'Pastor-Presidente', 'Vice-Presidente', 'Missionário', 'Missionária'];
                 $mostrarConsagracao = in_array($perfil->funcao, $funcoesMinisteriais);
@@ -507,6 +506,8 @@
             <a href="{{ route('membro.cartao', $perfil->matricula) }}" class="btn btn-primary">
                 <i class="fas fa-id-card"></i> Ver Cartão
             </a>
+            
+            {{-- ⭐ BOTÃO EDITAR - APENAS O DONO DO PERFIL --}}
             @if($membroLogado && $membroLogado->matricula == $perfil->matricula)
                 <a href="{{ route('perfil.edit') }}" class="btn btn-edit">
                     <i class="fas fa-edit"></i> Editar Perfil
@@ -646,7 +647,6 @@ document.addEventListener('DOMContentLoaded', function() {
             btnUpload.style.pointerEvents = 'none';
         }
 
-        // Preview
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = document.getElementById('fotoPerfil');
@@ -661,7 +661,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         reader.readAsDataURL(file);
 
-        // ⭐ UPLOAD
         const formData = new FormData();
         formData.append('foto', file);
 
@@ -683,10 +682,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 mostrarToast('Foto atualizada com sucesso! ✅', 'success');
                 
                 if (data.foto_url) {
-                    // Atualiza localmente
                     atualizarFoto(data.foto_url);
                     
-                    // ⭐ DISPARA EVENTO GLOBAL
                     if (window.FotoEvent) {
                         window.FotoEvent.atualizada(data.foto_url);
                         console.log('📸 Evento global de atualização de foto disparado');
@@ -695,7 +692,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 inputFoto.value = '';
-                // Não recarrega a página
             } else {
                 mostrarToast(data.message || 'Erro ao atualizar foto.', 'error');
                 inputFoto.value = '';
@@ -714,7 +710,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ===== REMOVER FOTO (duplo clique) =====
     avatarContainer.addEventListener('dblclick', function(e) {
         if (e.target.closest('.btn-upload-avatar') || e.target.closest('#inputFoto')) return;
         
@@ -730,7 +725,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Remove localmente
                 const img = document.getElementById('fotoPerfil');
                 if (img) img.remove();
                 
@@ -746,7 +740,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     placeholder.style.display = 'flex';
                 }
                 
-                // ⭐ DISPARA EVENTO GLOBAL DE REMOÇÃO
                 if (window.FotoEvent) {
                     window.FotoEvent.removida();
                     console.log('🗑️ Evento global de remoção de foto disparado');

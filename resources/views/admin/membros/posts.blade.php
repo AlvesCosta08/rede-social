@@ -7,6 +7,20 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto">
+    {{-- ⭐ VERIFICA PERMISSÃO --}}
+    @if(!auth()->user()?->pode('dashboard'))
+        <div class="card-modern text-center py-12">
+            <i class="fas fa-lock text-4xl text-red-400 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-400">Acesso Restrito</h3>
+            <p class="text-gray-500 dark:text-gray-500">
+                Você não tem permissão para acessar esta página.
+            </p>
+            <a href="{{ route('admin.membros.index') }}" class="btn-modern btn-modern-primary mt-4 inline-block">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    @else
+
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
         <a href="{{ route('admin.membros.index') }}" class="hover:text-indigo-500 transition">
@@ -24,10 +38,19 @@
     <div class="card-modern mb-6">
         <div class="flex items-center gap-4">
             <div class="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
-                @if($membro->foto)
-                    <img src="{{ $membro->foto_url }}" alt="{{ $membro->nome }}" class="w-full h-full object-cover">
+                @php
+                    $fotoNome = $membro->foto ?? null;
+                    $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                    $inicial = substr($membro->nome, 0, 1);
+                @endphp
+                
+                @if($fotoUrl)
+                    <img src="{{ $fotoUrl }}" 
+                         alt="{{ $membro->nome }}" 
+                         class="w-full h-full object-cover"
+                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $inicial }}';">
                 @else
-                    {{ substr($membro->nome, 0, 1) }}
+                    {{ $inicial }}
                 @endif
             </div>
             <div>
@@ -53,10 +76,13 @@
                    class="btn-modern btn-modern-outline text-sm">
                     <i class="fas fa-user"></i> Perfil
                 </a>
-                <a href="{{ route('admin.membros.edit', $membro->matricula) }}" 
-                   class="btn-modern btn-modern-primary text-sm">
-                    <i class="fas fa-edit"></i> Editar
-                </a>
+                {{-- ⭐ BOTÃO EDITAR - APENAS QUEM PODE EDITAR --}}
+                @if(auth()->user()?->pode('editar_membro', $membro))
+                    <a href="{{ route('admin.membros.edit', $membro->matricula) }}" 
+                       class="btn-modern btn-modern-primary text-sm">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -73,10 +99,13 @@
                 <i class="fas fa-times"></i> Desmarcar
             </button>
         </div>
-        <button onclick="deletarSelecionados()" 
-                class="btn-modern btn-modern-danger text-sm">
-            <i class="fas fa-trash"></i> Deletar Selecionados
-        </button>
+        {{-- ⭐ APENAS ADMIN PODE DELETAR EM MASSA --}}
+        @if(auth()->user()?->pode('excluir_membro'))
+            <button onclick="deletarSelecionados()" 
+                    class="btn-modern btn-modern-danger text-sm">
+                <i class="fas fa-trash"></i> Deletar Selecionados
+            </button>
+        @endif
     </div>
 
     <!-- Lista de publicações -->
@@ -85,20 +114,31 @@
             @foreach($publicacoes as $publicacao)
                 <div class="card-modern hover:border-indigo-200 transition">
                     <div class="flex items-start gap-4">
-                        <!-- Checkbox para seleção -->
-                        <input type="checkbox" 
-                               class="post-checkbox mt-2 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                               value="{{ $publicacao->id }}">
+                        {{-- ⭐ CHECKBOX - APENAS ADMIN --}}
+                        @if(auth()->user()?->pode('excluir_membro'))
+                            <input type="checkbox" 
+                                   class="post-checkbox mt-2 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                   value="{{ $publicacao->id }}">
+                        @endif
                         
                         <div class="flex-1 min-w-0">
                             <!-- Cabeçalho -->
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                                        @if($publicacao->autor && $publicacao->autor->foto)
-                                            <img src="{{ $publicacao->autor->foto_url }}" alt="" class="w-full h-full object-cover">
+                                        @php
+                                            $autorFotoNome = $publicacao->autor->foto ?? null;
+                                            $autorFotoUrl = $autorFotoNome ? route('imagem.foto', ['filename' => $autorFotoNome]) : null;
+                                            $autorInicial = $publicacao->autor ? substr($publicacao->autor->nome, 0, 1) : '?';
+                                        @endphp
+                                        
+                                        @if($autorFotoUrl)
+                                            <img src="{{ $autorFotoUrl }}" 
+                                                 alt="{{ $publicacao->autor->nome ?? 'Usuário' }}" 
+                                                 class="w-full h-full object-cover"
+                                                 onerror="this.style.display='none'; this.parentElement.textContent='{{ $autorInicial }}';">
                                         @else
-                                            {{ $publicacao->autor ? substr($publicacao->autor->nome, 0, 1) : '?' }}
+                                            {{ $autorInicial }}
                                         @endif
                                     </div>
                                     <div>
@@ -122,10 +162,13 @@
                                         <i class="fas fa-comment text-blue-400"></i> 
                                         {{ $publicacao->comentarios->count() }}
                                     </span>
-                                    <button onclick="deletarPublicacao({{ $publicacao->id }})" 
-                                            class="text-gray-400 hover:text-red-500 transition text-sm">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    {{-- ⭐ APENAS ADMIN PODE DELETAR POST --}}
+                                    @if(auth()->user()?->pode('excluir_membro'))
+                                        <button onclick="deletarPublicacao({{ $publicacao->id }})" 
+                                                class="text-gray-400 hover:text-red-500 transition text-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
 
@@ -149,10 +192,19 @@
                                         @foreach($publicacao->comentarios as $comentario)
                                             <div class="flex items-start gap-2">
                                                 <div class="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                                    @if($comentario->autor && $comentario->autor->foto)
-                                                        <img src="{{ $comentario->autor->foto_url }}" alt="" class="w-full h-full object-cover">
+                                                    @php
+                                                        $comentFotoNome = $comentario->autor->foto ?? null;
+                                                        $comentFotoUrl = $comentFotoNome ? route('imagem.foto', ['filename' => $comentFotoNome]) : null;
+                                                        $comentInicial = $comentario->autor ? substr($comentario->autor->nome, 0, 1) : '?';
+                                                    @endphp
+                                                    
+                                                    @if($comentFotoUrl)
+                                                        <img src="{{ $comentFotoUrl }}" 
+                                                             alt="" 
+                                                             class="w-full h-full object-cover"
+                                                             onerror="this.style.display='none'; this.parentElement.textContent='{{ $comentInicial }}';">
                                                     @else
-                                                        {{ $comentario->autor ? substr($comentario->autor->nome, 0, 1) : '?' }}
+                                                        {{ $comentInicial }}
                                                     @endif
                                                 </div>
                                                 <div class="flex-1 min-w-0">
@@ -168,10 +220,13 @@
                                                         {{ $comentario->conteudo }}
                                                     </p>
                                                 </div>
-                                                <button onclick="deletarComentario({{ $comentario->id }})" 
-                                                        class="text-gray-400 hover:text-red-500 transition text-xs">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
+                                                {{-- ⭐ APENAS ADMIN PODE DELETAR COMENTÁRIO --}}
+                                                @if(auth()->user()?->pode('excluir_membro'))
+                                                    <button onclick="deletarComentario({{ $comentario->id }})" 
+                                                            class="text-gray-400 hover:text-red-500 transition text-xs">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                @endif
                                             </div>
                                         @endforeach
                                     </div>
@@ -197,6 +252,8 @@
             </p>
         </div>
     @endif
+
+    @endif {{-- Fim da verificação de permissão --}}
 </div>
 
 <script>
@@ -226,7 +283,6 @@
 
         const ids = Array.from(selecionados).map(cb => cb.value);
         
-        // Deleta uma por uma (ou pode fazer em lote)
         let deletados = 0;
         ids.forEach(id => {
             fetch(`/admin/posts/${id}`, {
@@ -240,7 +296,6 @@
             .then(data => {
                 if (data.success) {
                     deletados++;
-                    // Remove o elemento da página
                     const elemento = document.querySelector(`input[value="${id}"]`)?.closest('.card-modern');
                     if (elemento) {
                         elemento.style.display = 'none';
@@ -280,7 +335,6 @@
     function deletarComentario(id) {
         if (!confirm('Tem certeza que deseja deletar este comentário?')) return;
 
-        // Comentários são deletados via FeedController
         fetch(`/feed/comentario/${id}`, {
             method: 'DELETE',
             headers: {

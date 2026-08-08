@@ -6,33 +6,20 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 
 class VerifyCsrfToken extends Middleware
 {
-    /**
-     * The URIs that should be excluded from CSRF verification.
-     *
-     * @var array<int, string>
-     */
     protected $except = [
-        // ⭐ ROTAS PÚBLICAS AJAX
+        // ✅ APENAS ROTAS GET SEM CSRF (SEGURAS)
         'buscar-membro-antigo/*',
         'verificar-matricula/*',
         
-        // ⭐ ROTAS DE LOGIN E REGISTRO
-        'login',
-        'register',
+        // ✅ ROTAS DE AUTENTICAÇÃO (JÁ TEM TOKEN)
+        // 'login',     // REMOVER - Deve ter CSRF
+        // 'register',  // REMOVER - Deve ter CSRF
+        // 'logout',    // REMOVER - Deve ter CSRF
         
-        // ⭐ LOGOUT
-        'logout',
+        // ✅ ROTAS DE API (SE EXISTIR)
+        'api/*',
         
-        // ⭐ UPLOAD DE FOTO
-        'perfil/foto',
-        'upload-foto',
-        
-        // ⭐ FEED - AÇÕES AJAX
-        'feed/publicar',
-        'feed/*/curtir',
-        'feed/*/comentar',
-        
-        // ⭐ ADMIN - AÇÕES EM MASSA
-        'admin/membros/bulk',
+        // ✅ WEBHOOKS (SE EXISTIR)
+        // 'webhook/*',
     ];
 }

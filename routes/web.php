@@ -88,7 +88,7 @@ Route::middleware(['auth'])->group(function () {
             ->where('id', '[0-9]+')
             ->middleware(['throttle:15,1']);
         
-        // ⭐ NOVA ROTA: Deletar comentário
+        // Deletar comentário
         Route::delete('/comentario/{id}', [FeedController::class, 'deleteComentario'])
             ->name('delete-comentario')
             ->where('id', '[0-9]+')
@@ -105,7 +105,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/editar', [PerfilController::class, 'update'])->name('update')
             ->middleware(['throttle:10,1']);
         
-        // ⭐ ROTAS DE FOTO
+        // ROTAS DE FOTO
         Route::post('/foto', [PerfilController::class, 'uploadFoto'])
             ->name('foto.upload');
         
@@ -150,12 +150,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('autocomplete')
             ->middleware(['throttle:200,1']);
         
-        // ⭐ ROTA: Busca avançada
+        // Busca avançada
         Route::get('/buscar-avancado', [MembroController::class, 'buscarAvancado'])
             ->name('buscar.avancado')
             ->middleware(['throttle:30,1']);
         
-        // ⭐ ROTA: Busca com highlight
+        // Busca com highlight
         Route::get('/buscar-highlight', [MembroController::class, 'buscarComHighlight'])
             ->name('buscar.highlight')
             ->middleware(['throttle:20,1']);
@@ -213,7 +213,7 @@ Route::middleware(['auth'])->group(function () {
             ->where('matricula', '[0-9]+')
             ->middleware(['throttle:100,1']);
         
-        // ⭐ NOVA ROTA: Verificar se segue
+        // Verificar se segue
         Route::get('/verificar/{seguidor}/{seguido}', [SeguidorController::class, 'verificarSegue'])
             ->name('verificar')
             ->where('seguidor', '[0-9]+')
@@ -222,34 +222,91 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ============================================================
-    // ADMIN
+    // ADMIN - ROTAS COM PERMISSÃO
     // ============================================================
-    Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function () {
-        Route::middleware(['throttle:300,1'])->group(function () {
-            // CRUD de membros
-            Route::resource('membros', AdminMembroController::class);
+    Route::prefix('admin')->name('admin.')->group(function () {
+        
+        // ⭐ ROTAS DE MEMBROS - TODAS AS OPERAÇÕES
+        Route::prefix('membros')->name('membros.')->group(function () {
+            
+            // Listar membros (dashboard)
+            Route::get('/', [AdminMembroController::class, 'index'])
+                ->name('index')
+                ->middleware(['permissao:dashboard', 'throttle:300,1']);
+            
+            // Visualizar membro (show) - TODOS COM PERMISSÃO DASHBOARD PODEM VER
+            Route::get('/{matricula}', [AdminMembroController::class, 'show'])
+                ->name('show')
+                ->where('matricula', '[0-9]+')
+                ->middleware(['permissao:dashboard', 'throttle:100,1']);
+            
+            // Criar membro (create/store)
+            Route::get('/create', [AdminMembroController::class, 'create'])
+                ->name('create')
+                ->middleware(['permissao:criar_membro', 'throttle:50,1']);
+            
+            Route::post('/', [AdminMembroController::class, 'store'])
+                ->name('store')
+                ->middleware(['permissao:criar_membro', 'throttle:20,1']);
+            
+            // Editar membro (edit/update)
+            Route::get('/{matricula}/edit', [AdminMembroController::class, 'edit'])
+                ->name('edit')
+                ->where('matricula', '[0-9]+')
+                ->middleware(['permissao:editar_membro', 'throttle:50,1']);
+            
+            Route::put('/{matricula}', [AdminMembroController::class, 'update'])
+                ->name('update')
+                ->where('matricula', '[0-9]+')
+                ->middleware(['permissao:editar_membro', 'throttle:20,1']);
+            
+            // Deletar membro
+            Route::delete('/{matricula}', [AdminMembroController::class, 'destroy'])
+                ->name('destroy')
+                ->where('matricula', '[0-9]+')
+                ->middleware(['permissao:excluir_membro', 'throttle:10,1']);
             
             // Ações em massa
-            Route::post('membros/bulk', [AdminMembroController::class, 'bulkAction'])
-                ->name('membros.bulk');
+            Route::post('/bulk', [AdminMembroController::class, 'bulkAction'])
+                ->name('bulk')
+                ->middleware(['permissao:editar_membro', 'throttle:20,1']);
             
             // Exportar
-            Route::get('membros/exportar', [AdminMembroController::class, 'exportar'])
-                ->name('membros.exportar');
+            Route::get('/exportar', [AdminMembroController::class, 'exportar'])
+                ->name('exportar')
+                ->middleware(['permissao:dashboard', 'throttle:10,1']);
             
-            // Estatísticas
-            Route::get('estatisticas', [AdminMembroController::class, 'estatisticas'])
-                ->name('estatisticas');
+            // Posts de membros
+            Route::get('/{matricula}/posts', [AdminMembroController::class, 'posts'])
+                ->name('posts')
+                ->where('matricula', '[0-9]+')
+                ->middleware(['permissao:dashboard', 'throttle:100,1']);
+        });
+
+        // ⭐ ESTATÍSTICAS
+        Route::get('/estatisticas', [AdminMembroController::class, 'estatisticas'])
+            ->name('estatisticas')
+            ->middleware(['permissao:dashboard', 'throttle:30,1']);
+
+        // ⭐ DELETAR POST (via admin)
+        Route::delete('/posts/{id}', [AdminMembroController::class, 'deletePost'])
+            ->name('posts.delete')
+            ->where('id', '[0-9]+')
+            ->middleware(['permissao:moderar_posts', 'throttle:10,1']);
+
+        // ⭐ GERENCIAR SECRETÁRIOS - APENAS ADMIN
+        Route::prefix('secretarios')->name('secretarios.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\SecretarioController::class, 'index'])
+                ->name('index')
+                ->middleware(['permissao:gerenciar_secretarios']);
             
-            // ⭐ CORRIGIDO: Posts de membros (com matrícula)
-            Route::get('membros/{matricula}/posts', [AdminMembroController::class, 'posts'])
-                ->name('membros.posts')
-                ->where('matricula', '[0-9]+');
+            Route::put('/{user}', [\App\Http\Controllers\Admin\SecretarioController::class, 'update'])
+                ->name('update')
+                ->middleware(['permissao:gerenciar_secretarios']);
             
-            // ⭐ CORRIGIDO: Deletar post (com ID)
-            Route::delete('posts/{id}', [AdminMembroController::class, 'deletePost'])
-                ->name('posts.delete')
-                ->where('id', '[0-9]+');
+            Route::delete('/{user}', [\App\Http\Controllers\Admin\SecretarioController::class, 'destroy'])
+                ->name('destroy')
+                ->middleware(['permissao:gerenciar_secretarios']);
         });
     });
 
@@ -272,7 +329,7 @@ Route::get('/imagens/fotos/{filename}', [ImagemController::class, 'show'])
     ->where('filename', '^[a-zA-Z0-9_\-\.]+$')
     ->middleware(['throttle:100,1']);
 
-// ⭐ NOVA ROTA: Upload de imagem via ImagemController
+// Upload de imagem via ImagemController
 Route::post('/imagens/upload', [ImagemController::class, 'upload'])
     ->name('imagem.upload')
     ->middleware(['auth', 'throttle:10,1']);

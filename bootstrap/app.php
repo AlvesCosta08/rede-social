@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Http\Middleware\AdminMiddleware;
-use App\Console\Commands\LimparDadosOrfaos;
+use App\Http\Middleware\CheckPermission;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,11 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // ALIAS DE MIDDLEWARES
         // ============================================================
         $middleware->alias([
-            // ⭐ MIDDLEWARES DO SEU SISTEMA
             'auth.membro' => \App\Http\Middleware\AutenticacaoMembro::class,
             'admin' => AdminMiddleware::class,
+            'permissao' => CheckPermission::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-            'auth' => \App\Http\Middleware\Authenticate::class, // Fallback
+            'auth' => \App\Http\Middleware\Authenticate::class,
         ]);
 
         // ============================================================
@@ -40,7 +40,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            // ⭐ COMPATIBILIDADE: Mantém sessão para código legado
             \App\Http\Middleware\CompatibilidadeMembro::class,
         ]);
 
@@ -57,37 +56,27 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\AutenticacaoMembro::class,
             AdminMiddleware::class,
+            CheckPermission::class,
         ]);
 
         // ============================================================
         // EXCEÇÕES DE CSRF (ROTAS AJAX)
         // ============================================================
         $middleware->validateCsrfTokens(except: [
-            // FEED - Ações AJAX
             'feed/publicar',
             'feed/*/curtir',
             'feed/*/comentar',
             'feed/*',
-            
-            // PERFIL - Upload/remoção de foto
             'perfil/foto',
             'perfil/*/foto',
             'perfil/foto/remover',
             'upload-foto',
             'remover-foto',
-            
-            // MEMBROS - Buscas AJAX
             'buscar-membros',
             'membros/buscar',
             'membros/buscar-avancado',
-            
-            // LOGOUT (POST)
             'logout',
-
-            // ADMIN - Ações em massa
             'admin/membros/bulk',
-            
-            // ROTAS AJAX PÚBLICAS
             'buscar-membro-antigo/*',
             'verificar-matricula/*',
             'login',
@@ -100,7 +89,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('login'));
     })
     ->withCommands([
-        LimparDadosOrfaos::class,
+        // Comandos removidos ou vazio se não houver nenhum
     ])
     ->withExceptions(function (Exceptions $exceptions): void {
         // ============================================================
@@ -175,5 +164,21 @@ return Application::configure(basePath: dirname(__DIR__))
                     'trace' => $e->getTrace()
                 ] : [])
             ], 500);
+        });
+
+        // ============================================================
+        // TRATAMENTO DE ERRO 403 (PERMISSÃO NEGADA) PARA WEB
+        // ============================================================
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Você não tem permissão para realizar esta ação.',
+                    'error' => 'forbidden'
+                ], 403);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Você não tem permissão para realizar esta ação.');
         });
     })->create();

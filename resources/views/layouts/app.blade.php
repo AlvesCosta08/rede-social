@@ -193,6 +193,33 @@
             font-weight: 700;
         }
 
+        /* ⭐ BADGE DE NÍVEL DO USUÁRIO */
+        .badge-nivel {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-left: auto;
+        }
+
+        .badge-nivel-admin {
+            background: #f44336;
+            color: white;
+        }
+
+        .badge-nivel-secretario {
+            background: #ff9800;
+            color: white;
+        }
+
+        .badge-nivel-usuario {
+            background: #9e9e9e;
+            color: white;
+        }
+
         .sidebar-footer {
             padding: 16px 24px;
             border-top: 1px solid var(--border);
@@ -585,37 +612,67 @@
             </a>
 
             <!-- ============================================================
-            MENU ADMIN - ✅ MELHORADO: Usa Auth em vez de query manual
+            ⭐ MENU ADMIN - VERIFICA PERMISSÃO COM PODE()
             ============================================================ -->
-            @php
-                // ✅ USA AUTH EM VEZ DE SESSION + QUERY
-                $isAdmin = auth()->check() && auth()->user()->isAdmin();
-            @endphp
-
-            @if($isAdmin)
+            @if(auth()->user()?->pode('dashboard'))
                 <div class="nav-label" style="margin-top: 20px;">Administração</div>
                 
-                <a href="{{ route('admin.membros.index') }}" class="{{ request()->routeIs('admin.*') ? 'active' : '' }}">
+                <!-- ⭐ GERENCIAR MEMBROS - ADMIN E SECRETÁRIO -->
+                <a href="{{ route('admin.membros.index') }}" class="{{ request()->routeIs('admin.membros.*') ? 'active' : '' }}">
                     <i class="fas fa-users-cog"></i> Gerenciar Membros
-                    <span class="badge">ADMIN</span>
+                    @if(auth()->user()->isAdmin())
+                        <span class="badge">👑</span>
+                    @elseif(auth()->user()->isSecretario())
+                        <span class="badge">📋</span>
+                    @endif
                 </a>
+
+                <!-- ⭐ ESTATÍSTICAS - ADMIN E SECRETÁRIO -->
+                <a href="{{ route('admin.estatisticas') }}" class="{{ request()->routeIs('admin.estatisticas') ? 'active' : '' }}">
+                    <i class="fas fa-chart-bar"></i> Estatísticas
+                </a>
+
+                <!-- ⭐ GERENCIAR SECRETÁRIOS - APENAS ADMIN -->
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.secretarios.index') }}" class="{{ request()->routeIs('admin.secretarios.*') ? 'active' : '' }}">
+                        <i class="fas fa-user-tie"></i> Secretários
+                        <span class="badge">👑</span>
+                    </a>
+                @endif
             @endif
         </nav>
 
         <!-- ============================================================
-        FOOTER DA SIDEBAR - ✅ MELHORADO: Usa Auth
+        FOOTER DA SIDEBAR - ✅ COM FOTO DINÂMICA
         ============================================================ -->
         <div class="sidebar-footer">
-            <div class="avatar">
-                @if(auth()->user()->foto)
-                    <img src="{{ auth()->user()->foto_url }}" alt="Foto" id="sidebarAvatar">
+            <div class="avatar" id="sidebarAvatarContainer">
+                @php
+                    $user = auth()->user();
+                    $fotoNome = $user->foto ?? null;
+                    $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                    $inicial = substr($user->nome ?? '?', 0, 1);
+                @endphp
+                
+                @if($fotoUrl)
+                    <img src="{{ $fotoUrl }}" 
+                         alt="Foto" 
+                         id="sidebarAvatar"
+                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $inicial }}';">
                 @else
-                    {{ substr(auth()->user()->nome ?? '?', 0, 1) }}
+                    {{ $inicial }}
                 @endif
             </div>
             <div class="user-info">
                 <div class="name">{{ auth()->user()->nome ?? 'Visitante' }}</div>
-                <div class="role">{{ auth()->user()->funcao ?? 'Membro' }}</div>
+                <div class="role">
+                    {{ auth()->user()->funcao ?? 'Membro' }}
+                    @if(auth()->user()->isAdmin())
+                        <span class="badge-nivel badge-nivel-admin">Admin</span>
+                    @elseif(auth()->user()->isSecretario())
+                        <span class="badge-nivel badge-nivel-secretario">Secretário</span>
+                    @endif
+                </div>
             </div>
             
             <!-- ✅ LOGOUT CORRIGIDO - USANDO FORMULÁRIO POST -->
@@ -646,6 +703,11 @@
                 </button>
                 <span style="font-size: 0.85rem; color: var(--text-secondary);">
                     <i class="fas fa-user-circle"></i> {{ auth()->user()->nome }}
+                    @if(auth()->user()->isAdmin())
+                        <span style="color: #f44336; font-weight: 700;"> 👑</span>
+                    @elseif(auth()->user()->isSecretario())
+                        <span style="color: #ff9800; font-weight: 700;"> 📋</span>
+                    @endif
                 </span>
             </div>
         </div>
@@ -808,8 +870,14 @@
         
         @auth
             console.log('👤 Logado como: {{ auth()->user()->nome }}');
+            console.log('📋 Matrícula: {{ auth()->user()->matricula }}');
             @if(auth()->user()->isAdmin())
                 console.log('🔐 Acesso administrativo detectado');
+                console.log('👑 Nível: ADMIN');
+            @elseif(auth()->user()->isSecretario())
+                console.log('📋 Nível: SECRETÁRIO');
+            @else
+                console.log('👤 Nível: USUÁRIO');
             @endif
         @endauth
     </script>

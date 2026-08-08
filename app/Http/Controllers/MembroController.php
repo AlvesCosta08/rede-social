@@ -156,7 +156,7 @@ class MembroController extends Controller
      */
     public function meuCartao()
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
         if (!$user) {
             return redirect()->route('login')->with('error', 'Faça login para ver sua carteira.');
@@ -167,15 +167,21 @@ class MembroController extends Controller
 
     /**
      * Mostrar carteira digital de um membro específico
+     * ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
      */
     public function cartao($matricula)
     {
         $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
         
-        // ✅ VERIFICA PERMISSÃO: só o próprio membro ou admin pode ver
         $user = Auth::user();
         
-        if (!$user || ($user->matricula !== $membro->matricula && !$user->isAdmin())) {
+        // ⭐ VERIFICA PERMISSÃO: só o próprio membro, secretário da congregação ou admin pode ver
+        if (!$user) {
+            abort(403, 'Faça login para ver esta carteira.');
+        }
+
+        // Verifica permissão usando o método pode()
+        if (!$user->pode('ver_membro', $membro) && $user->matricula !== $membro->matricula) {
             abort(403, 'Você não tem permissão para ver esta carteira.');
         }
 
@@ -195,9 +201,8 @@ class MembroController extends Controller
 
         $latitude = $request->latitude;
         $longitude = $request->longitude;
-        $raio = $request->get('raio', 10); // km
+        $raio = $request->get('raio', 10);
 
-        // Busca membros com coordenadas
         $membros = Filiado::on('mysql')
             ->where('status', 'ativo')
             ->whereNotNull('latitude')
@@ -244,7 +249,7 @@ class MembroController extends Controller
      */
     public function atualizarLocalizacao(Request $request)
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Usuário não autenticado.'], 401);
@@ -289,15 +294,14 @@ class MembroController extends Controller
      */
     public function sugestoes()
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Usuário não autenticado.'], 401);
         }
 
-        // Busca membros que o usuário ainda não segue
         $seguindo = $user->seguindo()->pluck('matricula')->toArray();
-        $seguindo[] = $user->matricula; // Não sugerir ele mesmo
+        $seguindo[] = $user->matricula;
 
         $sugestoes = Filiado::on('mysql')
             ->where('status', 'ativo')
@@ -369,13 +373,19 @@ class MembroController extends Controller
 
     /**
      * Exportar membros (CSV)
+     * ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
      */
     public function exportar(Request $request)
     {
-        $user = Auth::user(); // ✅ USA AUTH
+        $user = Auth::user();
         
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Apenas administradores podem exportar dados.');
+        // ⭐ VERIFICA PERMISSÃO PARA EXPORTAR
+        if (!$user || !$user->pode('exportar_membros')) {
+            Log::warning('⚠️ Tentativa de exportação sem permissão', [
+                'matricula' => $user?->matricula,
+                'ip' => request()->ip()
+            ]);
+            abort(403, 'Você não tem permissão para exportar dados.');
         }
 
         $query = Filiado::on('mysql')->where('status', 'ativo');
@@ -398,7 +408,6 @@ class MembroController extends Controller
         $callback = function() use ($membros) {
             $file = fopen('php://output', 'w');
             
-            // Cabeçalho
             fputcsv($file, [
                 'Matrícula', 
                 'Nome', 
@@ -413,7 +422,6 @@ class MembroController extends Controller
                 'Data Cadastro'
             ]);
 
-            // Dados
             foreach ($membros as $membro) {
                 fputcsv($file, [
                     $membro->matricula,
@@ -433,6 +441,11 @@ class MembroController extends Controller
             fclose($file);
         };
 
+        Log::info('📊 Exportação de membros realizada', [
+            'matricula' => $user->matricula,
+            'total' => $membros->count()
+        ]);
+
         return response()->stream($callback, 200, $headers);
     }
 
@@ -448,13 +461,12 @@ class MembroController extends Controller
             ->where('matricula', $matricula)
             ->firstOrFail();
 
-        // Verifica permissão para ver dados privados
         $user = Auth::user();
-        $podeVerPrivado = $user && ($user->matricula === $membro->matricula || $user->isAdmin());
         
-        // Se não for admin nem o próprio, mostra apenas dados públicos
+        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
+        $podeVerPrivado = $user && ($user->matricula === $membro->matricula || $user->pode('ver_membro', $membro));
+        
         if (!$podeVerPrivado && !$membro->privacidade) {
-            // Esconde dados sensíveis
             $membro->makeHidden(['email', 'telefone', 'documento', 'endereco']);
         }
 

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Antigo\FiliadoAntigo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +13,13 @@ use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
+    /**
+     * ⭐ CONSTANTES DE NÍVEIS
+     */
+    const NIVEL_USUARIO = 'usuario';
+    const NIVEL_SECRETARIO = 'secretario';
+    const NIVEL_ADMIN = 'admin';
+
     /**
      * Cargos que exigem data de consagração
      */
@@ -27,13 +33,28 @@ class AuthController extends Controller
         'Auxiliar'
     ];
 
+    /**
+     * ⭐ Mapeamento de funções para níveis
+     */
+    private $mapeamentoNiveis = [
+        'Pastor-Presidente' => self::NIVEL_ADMIN,
+        'Pastor-Vice-Presidente' => self::NIVEL_ADMIN,
+        'Pastor' => self::NIVEL_ADMIN,
+        'Evangelista' => self::NIVEL_SECRETARIO,
+        'Presbitero' => self::NIVEL_SECRETARIO,
+        'Diacono' => self::NIVEL_SECRETARIO,
+        'Auxiliar' => self::NIVEL_SECRETARIO,
+        'Secretario' => self::NIVEL_SECRETARIO,
+        'Secretário' => self::NIVEL_SECRETARIO,
+    ];
+
     // ============================================================
-    // BUSCAR MEMBRO NO BANCO ANTIGO (AJAX)
+    // BUSCAR MEMBRO (AJAX) - SEM SISTEMA ANTIGO
     // ============================================================
     public function buscarMembroAntigo($matricula)
     {
         $startTime = microtime(true);
-        Log::channel('auth')->info('🔍 INICIANDO BUSCA DE MEMBRO ANTIGO', [
+        Log::channel('auth')->info('🔍 INICIANDO BUSCA DE MEMBRO', [
             'matricula' => $matricula,
             'ip' => request()->ip()
         ]);
@@ -46,45 +67,41 @@ class AuthController extends Controller
                 ], 400);
             }
 
-            $filiadoAntigo = FiliadoAntigo::on('sistema_antigo')
-                                ->where('matricula', $matricula)
-                                ->first();
+            // Buscar apenas no sistema novo
+            $user = User::where('matricula', $matricula)->first();
             
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
             
-            if ($filiadoAntigo) {
-                $existeNoNovo = User::where('matricula', $matricula)->exists();
-                
-                Log::channel('auth')->info('✅ MEMBRO ENCONTRADO NO BANCO ANTIGO', [
+            if ($user) {
+                Log::channel('auth')->info('✅ MEMBRO ENCONTRADO', [
                     'matricula' => $matricula,
-                    'nome' => $filiadoAntigo->nome,
+                    'nome' => $user->nome,
                     'execution_time_ms' => $executionTime
                 ]);
                 
                 return response()->json([
                     'success' => true,
                     'exists' => true,
-                    'existe_no_novo' => $existeNoNovo,
                     'dados' => [
-                        'matricula' => $filiadoAntigo->matricula,
-                        'nome' => $filiadoAntigo->nome ?? '',
-                        'funcao' => $filiadoAntigo->funcao ?? 'Membro',
-                        'cidade' => $filiadoAntigo->cidade ?? '',
-                        'uf' => $filiadoAntigo->uf ?? '',
-                        'foto' => $filiadoAntigo->foto ?? null,
-                        'email' => $filiadoAntigo->email ?? '',
-                        'telefone' => $filiadoAntigo->telefone ?? '',
-                        'documento' => $filiadoAntigo->documento ?? '',
-                        'dataNascimento' => $filiadoAntigo->dataNascimento ?? '',
-                        'dataBatismo' => $filiadoAntigo->dataBatismo ?? '',
-                        'data_Consagracao' => $filiadoAntigo->data_Consagracao ?? '',
-                        'endereco' => $filiadoAntigo->endereco ?? '',
-                        'congregacao' => $filiadoAntigo->congregacao ?? '',
+                        'matricula' => $user->matricula,
+                        'nome' => $user->nome ?? '',
+                        'funcao' => $user->funcao ?? 'Membro',
+                        'cidade' => $user->cidade ?? '',
+                        'uf' => $user->uf ?? '',
+                        'foto' => $user->foto ?? null,
+                        'email' => $user->email ?? '',
+                        'telefone' => $user->telefone ?? '',
+                        'documento' => $user->documento ?? '',
+                        'dataNascimento' => $user->dataNascimento ?? '',
+                        'dataBatismo' => $user->dataBatismo ?? '',
+                        'data_Consagracao' => $user->data_Consagracao ?? '',
+                        'endereco' => $user->endereco ?? '',
+                        'congregacao' => $user->congregacao ?? '',
                     ]
                 ]);
             }
             
-            Log::channel('auth')->warning('⚠️ MATRÍCULA NÃO ENCONTRADA NO BANCO ANTIGO', [
+            Log::channel('auth')->warning('⚠️ MATRÍCULA NÃO ENCONTRADA', [
                 'matricula' => $matricula,
                 'execution_time_ms' => $executionTime
             ]);
@@ -96,7 +113,7 @@ class AuthController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            Log::channel('auth')->error('❌ ERRO AO BUSCAR MEMBRO ANTIGO', [
+            Log::channel('auth')->error('❌ ERRO AO BUSCAR MEMBRO', [
                 'matricula' => $matricula,
                 'error' => $e->getMessage()
             ]);
@@ -137,20 +154,6 @@ class AuthController extends Controller
                     'nome' => $user->nome,
                     'ja_ativado' => $jaAtivado,
                     'message' => $jaAtivado ? 'Esta conta já foi ativada. Faça login.' : 'Matrícula válida!'
-                ]);
-            }
-            
-            $filiadoAntigo = FiliadoAntigo::on('sistema_antigo')
-                                ->where('matricula', $matricula)
-                                ->first();
-            
-            if ($filiadoAntigo) {
-                return response()->json([
-                    'exists' => true,
-                    'status' => 'ativo',
-                    'nome' => $filiadoAntigo->nome,
-                    'ja_ativado' => false,
-                    'message' => 'Matrícula validada! Complete seu cadastro.'
                 ]);
             }
             
@@ -231,7 +234,7 @@ class AuthController extends Controller
                 'cidade' => 'required|string|max:100|min:2',
                 'uf' => 'required|string|max:2|min:2|in:AC,AL,AP,AM,BA,CE,DF,ES,GO,MA,MT,MS,MG,PA,PB,PR,PE,PI,RJ,RN,RS,RO,RR,SC,SP,SE,TO',
                 'congregacao' => 'required|string|max:255|min:2',
-                'funcao' => 'required|string|in:Membro,Pastor-Presidente,Pastor-Vice-Presidente,Pastor,Evangelista,Presbitero,Diacono,Auxiliar',
+                'funcao' => 'required|string|in:Membro,Pastor-Presidente,Pastor-Vice-Presidente,Pastor,Evangelista,Presbitero,Diacono,Auxiliar,Secretario,Secretário',
                 'data_Consagracao' => 'nullable|date|before_or_equal:today',
                 'password' => 'required|string|min:8|confirmed',
                 'terms' => 'accepted'
@@ -300,18 +303,26 @@ class AuthController extends Controller
                 $request->merge(['data_Consagracao' => $dataConsagracao]);
             }
 
-            // Verifica no banco antigo
-            $filiadoAntigo = FiliadoAntigo::on('sistema_antigo')
-                                ->where('matricula', $request->matricula)
-                                ->first();
+            $documentoLimpo = preg_replace('/[^0-9]/', '', $request->documento);
+
+            // ⭐ DETERMINA O NÍVEL BASEADO NA FUNÇÃO
+            $nivel = self::NIVEL_USUARIO;
             
-            if (!$filiadoAntigo) {
-                return back()
-                    ->withInput($request->except('password', 'password_confirmation'))
-                    ->with('error', 'Favor procurar a Secretaria Geral da Sede');
+            // Verifica se a função tem um nível mapeado
+            if (isset($this->mapeamentoNiveis[$funcao])) {
+                $nivel = $this->mapeamentoNiveis[$funcao];
+            }
+            
+            // Se for Secretário, define como secretário
+            if (in_array($funcao, ['Secretario', 'Secretário'])) {
+                $nivel = self::NIVEL_SECRETARIO;
             }
 
-            $documentoLimpo = preg_replace('/[^0-9]/', '', $request->documento);
+            Log::channel('auth')->info('🏷️ NÍVEL DEFINIDO PARA O USUÁRIO', [
+                'matricula' => $request->matricula,
+                'funcao' => $funcao,
+                'nivel' => $nivel
+            ]);
 
             $dadosParaSalvar = [
                 'matricula' => $request->matricula,
@@ -331,6 +342,7 @@ class AuthController extends Controller
                 'password' => Hash::make($request->password),
                 'status' => 'ativo',
                 'privacidade' => true,
+                'nivel' => $nivel,
                 'created_at' => now(),
                 'updated_at' => now(),
                 'datCadastro' => now(),
@@ -345,14 +357,16 @@ class AuthController extends Controller
                     $user = User::create($dadosParaSalvar);
                     Log::channel('auth')->info('✅ NOVO USUÁRIO CRIADO', [
                         'matricula' => $user->matricula,
-                        'nome' => $user->nome
+                        'nome' => $user->nome,
+                        'nivel' => $nivel
                     ]);
                 } else if (empty($user->password)) {
                     unset($dadosParaSalvar['matricula']);
                     $user->update($dadosParaSalvar);
                     Log::channel('auth')->info('✅ USUÁRIO ATUALIZADO', [
                         'matricula' => $user->matricula,
-                        'nome' => $user->nome
+                        'nome' => $user->nome,
+                        'nivel' => $nivel
                     ]);
                 } else {
                     DB::rollBack();
@@ -371,17 +385,26 @@ class AuthController extends Controller
             // ⭐ LOGIN
             Auth::login($user);
             
-            // ⭐ SESSÃO PARA COMPATIBILIDADE (views ainda usam session)
+            // ⭐ SESSÃO PARA COMPATIBILIDADE
             $this->atualizarSessao($user);
             
             Session::regenerate();
 
             Log::channel('auth')->info('🎉 CADASTRO REALIZADO COM SUCESSO', [
                 'matricula' => $user->matricula,
-                'nome' => $user->nome
+                'nome' => $user->nome,
+                'nivel' => $nivel
             ]);
 
-            return redirect()->route('feed.index')->with('success', 'Conta ativada com sucesso! Bem-vindo(a)! 🎉');
+            // ⭐ MENSAGEM PERSONALIZADA POR NÍVEL
+            $mensagem = 'Conta ativada com sucesso! Bem-vindo(a)! 🎉';
+            if ($nivel === self::NIVEL_ADMIN) {
+                $mensagem .= ' 👑 Você tem acesso administrativo completo.';
+            } elseif ($nivel === self::NIVEL_SECRETARIO) {
+                $mensagem .= ' 📋 Você tem permissões de secretário.';
+            }
+
+            return redirect()->route('feed.index')->with('success', $mensagem);
 
         } catch (\Exception $e) {
             Log::channel('auth')->error('❌ ERRO NO PROCESSO DE CADASTRO', [
@@ -408,7 +431,7 @@ class AuthController extends Controller
     }
 
     // ============================================================
-    // PROCESSAR LOGIN (MELHORADO)
+    // PROCESSAR LOGIN - SEM SISTEMA ANTIGO
     // ============================================================
     public function login(Request $request)
     {
@@ -438,30 +461,50 @@ class AuthController extends Controller
                 return back()->withErrors($validator)->withInput($request->except('password'));
             }
 
-            // Buscar usuário
+            // Buscar usuário apenas no sistema novo
             $user = User::where('matricula', $request->matricula)->first();
             
             if (!$user) {
-                // Tenta migrar do banco antigo
-                $userAntigo = FiliadoAntigo::on('sistema_antigo')
-                                    ->where('matricula', $request->matricula)
-                                    ->first();
-                
-                if ($userAntigo) {
-                    $user = $this->migrarUsuario($userAntigo, $request->password);
-                } else {
-                    return back()->with('error', 'Favor procurar a Secretaria Geral da Sede');
-                }
+                Log::channel('auth')->warning('⚠️ MATRÍCULA NÃO ENCONTRADA', [
+                    'matricula' => $request->matricula,
+                    'ip' => request()->ip()
+                ]);
+                return back()->with('error', 'Favor procurar a Secretaria Geral da Sede');
             }
 
             // Verificar senha
             if (!Hash::check($request->password, $user->password)) {
+                Log::channel('auth')->warning('⚠️ SENHA INCORRETA', [
+                    'matricula' => $request->matricula,
+                    'ip' => request()->ip()
+                ]);
                 return back()->with('error', 'Matrícula ou senha incorretos!');
             }
 
             // Verificar status
             if (!in_array(strtolower($user->status), ['ativo', 'membro'])) {
+                Log::channel('auth')->warning('⚠️ CONTA INATIVA', [
+                    'matricula' => $request->matricula,
+                    'status' => $user->status,
+                    'ip' => request()->ip()
+                ]);
                 return back()->with('error', 'Sua conta está ' . $user->status . '. Contate a secretaria.');
+            }
+
+            // ⭐ VERIFICA SE O USUÁRIO TEM NÍVEL DEFINIDO
+            if (empty($user->nivel)) {
+                // Se for admin pelo campo antigo, define como admin
+                if ($user->admin === true || $user->admin === 1) {
+                    $user->nivel = self::NIVEL_ADMIN;
+                } else {
+                    $user->nivel = self::NIVEL_USUARIO;
+                }
+                $user->save();
+                
+                Log::channel('auth')->info('🔄 NÍVEL DEFINIDO AUTOMATICAMENTE', [
+                    'matricula' => $user->matricula,
+                    'nivel' => $user->nivel
+                ]);
             }
 
             // ⭐ LOGIN
@@ -474,10 +517,19 @@ class AuthController extends Controller
 
             Log::channel('auth')->info('✅ LOGIN REALIZADO COM SUCESSO', [
                 'matricula' => $user->matricula,
-                'nome' => $user->nome
+                'nome' => $user->nome,
+                'nivel' => $user->nivel
             ]);
 
-            return redirect()->route('feed.index')->with('success', "Bem-vindo(a) {$user->nome}!");
+            // ⭐ MENSAGEM PERSONALIZADA POR NÍVEL
+            $mensagem = "Bem-vindo(a) {$user->nome}!";
+            if ($user->isAdmin()) {
+                $mensagem .= " 👑 Você tem acesso administrativo completo.";
+            } elseif ($user->isSecretario()) {
+                $mensagem .= " 📋 Você tem permissões de secretário.";
+            }
+
+            return redirect()->route('feed.index')->with('success', $mensagem);
 
         } catch (\Exception $e) {
             Log::channel('auth')->error('❌ ERRO NO PROCESSO DE LOGIN', [
@@ -490,41 +542,7 @@ class AuthController extends Controller
     }
 
     // ============================================================
-    // ⭐ NOVO: MÉTODO PARA MIGRAR USUÁRIO
-    // ============================================================
-    private function migrarUsuario($userAntigo, $password)
-    {
-        Log::channel('auth')->info('📝 MIGRANDO USUÁRIO DO BANCO ANTIGO', [
-            'matricula' => $userAntigo->matricula,
-            'nome' => $userAntigo->nome
-        ]);
-
-        $dados = [
-            'matricula' => $userAntigo->matricula,
-            'nome' => $userAntigo->nome ?? 'Usuário',
-            'password' => Hash::make($password),
-            'funcao' => $userAntigo->funcao ?? 'Membro',
-            'status' => 'ativo',
-            'created_at' => now(),
-            'updated_at' => now(),
-            'datCadastro' => $userAntigo->datCadastro ?? now(),
-        ];
-
-        // Copia dados se existirem
-        $campos = ['email', 'telefone', 'documento', 'cidade', 'uf', 'endereco', 'foto'];
-        foreach ($campos as $campo) {
-            if (!empty($userAntigo->$campo)) {
-                $dados[$campo] = $campo === 'documento' 
-                    ? preg_replace('/[^0-9]/', '', $userAntigo->$campo) 
-                    : $userAntigo->$campo;
-            }
-        }
-
-        return User::create($dados);
-    }
-
-    // ============================================================
-    // ⭐ NOVO: MÉTODO PARA ATUALIZAR SESSÃO
+    // MÉTODO PARA ATUALIZAR SESSÃO
     // ============================================================
     private function atualizarSessao($user)
     {
@@ -532,10 +550,11 @@ class AuthController extends Controller
         Session::put('membro_nome', $user->nome);
         Session::put('membro_funcao', $user->funcao);
         Session::put('membro_foto', $user->foto);
+        Session::put('membro_nivel', $user->nivel ?? self::NIVEL_USUARIO);
     }
 
     // ============================================================
-    // LOGOUT (MELHORADO)
+    // LOGOUT
     // ============================================================
     public function logout(Request $request)
     {
@@ -544,7 +563,8 @@ class AuthController extends Controller
         if ($user) {
             Log::channel('auth')->info('🚪 LOGOUT', [
                 'matricula' => $user->matricula,
-                'nome' => $user->nome
+                'nome' => $user->nome,
+                'nivel' => $user->nivel
             ]);
         }
         
@@ -579,7 +599,8 @@ class AuthController extends Controller
         $matricula = $user->matricula;
         
         Log::channel('auth')->info('🚪 INICIANDO PROCESSO DE SAÍDA DA IGREJA', [
-            'matricula' => $matricula
+            'matricula' => $matricula,
+            'nivel' => $user->nivel
         ]);
 
         try {

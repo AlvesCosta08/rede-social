@@ -89,18 +89,9 @@
             font-size: 0.95rem;
         }
         
-        .form-group select option:hover {
-            background-color: #d4af37 !important;
-            color: #1a1a2e !important;
-        }
-        
         .form-group select option:checked {
             background-color: #d4af37 !important;
             color: #1a1a2e !important;
-        }
-        
-        .form-group select option:first-child {
-            color: rgba(255,255,255,0.5) !important;
         }
         
         .form-group .help-text { 
@@ -110,15 +101,6 @@
             display: block; 
         }
         
-        .form-group.hidden {
-            display: none;
-        }
-        
-        .form-group .campo-consagracao {
-            transition: all 0.3s ease;
-        }
-        
-        /* ===== STATUS DE BUSCA ===== */
         #status-busca {
             padding: 10px 14px;
             border-radius: 10px;
@@ -149,28 +131,9 @@
             color: #f44336;
         }
         
-        #status-busca.info {
-            display: block;
-            background: rgba(33, 150, 243, 0.15);
-            border: 1px solid #2196f3;
-            color: #2196f3;
-        }
-        
         .form-group input.preencher-automatico {
             border-color: rgba(76, 175, 80, 0.3);
             background: rgba(76, 175, 80, 0.05);
-        }
-        
-        .campo-automatico-badge {
-            display: inline-block;
-            background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
-            font-size: 0.6rem;
-            padding: 2px 8px;
-            border-radius: 10px;
-            margin-left: 8px;
-            font-weight: 600;
-            text-transform: uppercase;
         }
         
         .terms-group {
@@ -272,7 +235,6 @@
             </div>
         @endif
 
-        <!-- ===== STATUS DA BUSCA ===== -->
         <div id="status-busca"></div>
 
         <form method="POST" action="{{ route('register') }}" id="form-register">
@@ -386,9 +348,7 @@
                 </select>
             </div>
 
-            <!-- ============================================================
-                 CONGREGAÇÃO - SELECT COM LISTA COMPLETA ✅
-                 ============================================================ -->
+            <!-- CONGREGAÇÃO -->
             <div class="form-group full-width">
                 <label>Congregação <span class="required">*</span></label>
                 <select name="congregacao" id="congregacao" required>
@@ -412,9 +372,7 @@
                 <span class="help-text">Selecione a congregação onde você congrega</span>
             </div>
 
-            <!-- ============================================================
-                 FUNÇÃO - SELECT COMPLETO ✅
-                 ============================================================ -->
+            <!-- FUNÇÃO -->
             <div class="form-group full-width">
                 <label>Função/Cargo <span class="required">*</span></label>
                 <select name="funcao" id="funcao" required>
@@ -434,9 +392,7 @@
                 <span class="help-text">Selecione seu cargo ou função na igreja</span>
             </div>
 
-            <!-- ============================================================
-                 DATA DE CONSAGRAÇÃO - Aparece apenas para cargos específicos
-                 ============================================================ -->
+            <!-- DATA DE CONSAGRAÇÃO -->
             <div class="form-group full-width" id="campo-consagracao" style="display: {{ in_array(old('funcao'), ['pastor_presidente', 'co_pastor', 'pastor', 'evangelista', 'presbítero', 'diácono', 'auxiliar', 'missionário']) ? 'block' : 'none' }};">
                 <label>Data de Consagração <span class="required">*</span></label>
                 <input type="date" 
@@ -485,9 +441,6 @@
         </div>
     </div>
 
-    <!-- ============================================================
-    SCRIPT COMPLETO - BUSCA AUTOMÁTICA + PREENCHIMENTO
-    ============================================================ -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // ============================================================
@@ -497,7 +450,6 @@
         const statusBusca = document.getElementById('status-busca');
         const btnRegister = document.getElementById('btn-register');
         
-        // Campos que serão preenchidos automaticamente
         const camposPreencher = {
             nome: document.getElementById('nome'),
             funcao: document.getElementById('funcao'),
@@ -524,15 +476,12 @@
         // FUNÇÃO PARA PREENCHER CAMPOS
         // ============================================================
         function preencherCampos(dados) {
-            // Nome
             if (dados.nome && camposPreencher.nome) {
                 camposPreencher.nome.value = dados.nome;
                 camposPreencher.nome.classList.add('preencher-automatico');
             }
             
-            // Função
             if (dados.funcao && camposPreencher.funcao) {
-                // Mapear função do banco antigo para o novo formato
                 const mapeamentoFuncao = {
                     'Membro': 'membro',
                     'Pastor-Presidente': 'pastor_presidente',
@@ -556,18 +505,15 @@
                 }
                 camposPreencher.funcao.classList.add('preencher-automatico');
                 
-                // Disparar evento change para mostrar/esconder data de consagração
                 const event = new Event('change');
                 camposPreencher.funcao.dispatchEvent(event);
             }
             
-            // Cidade
             if (dados.cidade && camposPreencher.cidade) {
                 camposPreencher.cidade.value = dados.cidade;
                 camposPreencher.cidade.classList.add('preencher-automatico');
             }
             
-            // UF
             if (dados.uf && camposPreencher.uf) {
                 const options = camposPreencher.uf.options;
                 for (let i = 0; i < options.length; i++) {
@@ -579,7 +525,6 @@
                 camposPreencher.uf.classList.add('preencher-automatico');
             }
             
-            // Congregação
             if (dados.congregacao && camposPreencher.congregacao) {
                 const options = camposPreencher.congregacao.options;
                 for (let i = 0; i < options.length; i++) {
@@ -601,11 +546,9 @@
                 return;
             }
             
-            // Mostrar loading
             mostrarStatus('⏳ Buscando dados da matrícula ' + matricula + '...', 'loading');
             btnRegister.disabled = true;
             
-            // ⭐ URL FIXA - SEM USAR route() DENTRO DO JAVASCRIPT
             const url = '/sistemas/conexao-igreja/buscar-membro-antigo/' + encodeURIComponent(matricula);
             
             console.log('🔍 Buscando:', url);
@@ -629,16 +572,13 @@
                 console.log('📦 Dados recebidos:', data);
                 
                 if (data.success && data.exists) {
-                    // ✅ Matrícula encontrada
                     mostrarStatus('✅ Dados encontrados! Campos preenchidos automaticamente.', 'success');
                     preencherCampos(data.dados);
                     btnRegister.disabled = false;
                 } else if (data.success && !data.exists) {
-                    // ❌ Matrícula não encontrada
                     mostrarStatus('⚠️ Matrícula ' + matricula + ' não encontrada. Favor procurar a Secretaria Geral da Sede.', 'error');
                     btnRegister.disabled = true;
                 } else {
-                    // ❌ Erro na busca
                     mostrarStatus('❌ Erro ao buscar dados: ' + (data.message || 'Tente novamente.'), 'error');
                     btnRegister.disabled = false;
                 }
@@ -653,8 +593,6 @@
         // ============================================================
         // EVENTOS DA MATRÍCULA
         // ============================================================
-        
-        // Buscar ao sair do campo (blur)
         matriculaInput.addEventListener('blur', function() {
             const matricula = this.value.trim();
             if (matricula) {
@@ -665,7 +603,6 @@
             }
         });
         
-        // Buscar ao pressionar Enter
         matriculaInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -676,7 +613,6 @@
             }
         });
         
-        // Limpar status ao digitar
         matriculaInput.addEventListener('input', function() {
             if (this.value.trim() === '') {
                 esconderStatus();
@@ -716,7 +652,6 @@
             }
         }
 
-        // Executa ao carregar e ao mudar
         toggleCampoConsagracao();
         funcaoSelect.addEventListener('change', toggleCampoConsagracao);
         

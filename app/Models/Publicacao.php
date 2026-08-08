@@ -3,60 +3,94 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Publicacao extends Model
 {
-    // ⭐ FORÇA O BANCO NOVO
     protected $connection = 'mysql';
-    
-    // ⭐ ESPECIFICA O NOME CORRETO DA TABELA (IMPORTANTE!)
-    protected $table = 'publicacoes';  // <-- NOME CORRETO
-    
+    protected $table = 'publicacoes';
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = true;
+
     protected $fillable = [
         'filiado_matricula',
-        'conteudo'
+        'conteudo',
+        'created_at',
+        'updated_at'
     ];
 
-    // ⭐ RELACIONAMENTOS COM OS NOMES CORRETOS DAS TABELAS
-    public function autor()
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    // ============================================================
+    // RELACIONAMENTOS
+    // ============================================================
+
+    public function autor(): BelongsTo
     {
-        return $this->belongsTo(Filiado::class, 'filiado_matricula', 'matricula');
+        return $this->belongsTo(User::class, 'filiado_matricula', 'matricula');
     }
 
-    public function comentarios()
+    public function comentarios(): HasMany
     {
-        return $this->hasMany(Comentario::class, 'publicacao_id');
+        return $this->hasMany(Comentario::class, 'publicacao_id', 'id');
     }
 
-    public function curtidas()
+    public function curtidas(): HasMany
     {
-        return $this->belongsToMany(
-            Filiado::class,
-            'curtidas',           // Nome da tabela pivot
-            'publicacao_id',      // Chave estrangeira na tabela pivot
-            'filiado_matricula',  // Chave relacionada na tabela pivot
-            'id',                 // Chave local
-            'matricula'           // Chave relacionada
-        );
+        return $this->hasMany(Curtida::class, 'publicacao_id', 'id');
     }
 
-    public function isCurtidoPor($membro)
+    // ============================================================
+    // MÉTODOS AUXILIARES
+    // ============================================================
+
+    public function isCurtidoPor(User $user): bool
     {
-        return $this->curtidas()->where('filiado_matricula', $membro->matricula)->exists();
+        return $this->curtidas()
+            ->where('filiado_matricula', $user->matricula)
+            ->exists();
     }
 
-    public function getCurtidasCountAttribute()
+    public function getCurtidasCountAttribute(): int
     {
         return $this->curtidas()->count();
     }
 
-    // ⭐ VALIDAÇÃO AO CRIAR
-    protected static function booted()
+    public function getComentariosCountAttribute(): int
     {
-        static::creating(function ($publicacao) {
-            if (!Filiado::on('mysql')->where('matricula', $publicacao->filiado_matricula)->exists()) {
-                throw new \Exception('Matrícula inválida: ' . $publicacao->filiado_matricula);
-            }
-        });
+        return $this->comentarios()->count();
+    }
+
+    public function getTempoPublicacaoAttribute(): string
+    {
+        return $this->created_at->diffForHumans();
+    }
+
+    // ============================================================
+    // SCOPES
+    // ============================================================
+
+    public function scopeDoUsuario($query, User $user)
+    {
+        return $query->where('filiado_matricula', $user->matricula);
+    }
+
+    public function scopeDosSeguidos($query, User $user)
+    {
+        $seguindoIds = $user->seguindo()->pluck('matricula')->toArray();
+        $seguindoIds[] = $user->matricula;
+        
+        return $query->whereIn('filiado_matricula', $seguindoIds);
+    }
+
+    public function scopeGlobal($query)
+    {
+        return $query->orderBy('created_at', 'desc');
     }
 }

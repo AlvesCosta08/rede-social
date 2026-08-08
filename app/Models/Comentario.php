@@ -3,37 +3,50 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Comentario extends Model
 {
-    // ⭐ FORÇA O BANCO NOVO
     protected $connection = 'mysql';
-    
-    // ⭐ ESPECIFICA O NOME CORRETO DA TABELA
-    protected $table = 'comentarios';  // <-- NOME CORRETO
-    
+    protected $table = 'comentarios';
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = true;
+
     protected $fillable = [
         'publicacao_id',
         'filiado_matricula',
-        'conteudo'
+        'conteudo',
+        'created_at',
+        'updated_at'
     ];
 
-    public function autor()
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    // ============================================================
+    // RELACIONAMENTOS
+    // ============================================================
+
+    public function publicacao(): BelongsTo
     {
-        return $this->belongsTo(Filiado::class, 'filiado_matricula', 'matricula');
+        return $this->belongsTo(Publicacao::class, 'publicacao_id', 'id');
     }
 
-    public function publicacao()
+    public function autor(): BelongsTo
     {
-        return $this->belongsTo(Publicacao::class, 'publicacao_id');
+        return $this->belongsTo(User::class, 'filiado_matricula', 'matricula');
     }
 
-    protected static function booted()
+    // ============================================================
+    // ACCESSORS
+    // ============================================================
+
+    public function getTempoComentarioAttribute(): string
     {
-        static::creating(function ($comentario) {
-            if (!Filiado::on('mysql')->where('matricula', $comentario->filiado_matricula)->exists()) {
-                throw new \Exception('Matrícula inválida: ' . $comentario->filiado_matricula);
-            }
-        });
+        return $this->created_at->diffForHumans();
     }
 }

@@ -314,7 +314,6 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             input.classList.add('error');
             
-            // Mostrar toast
             const toast = document.getElementById('toastSair');
             const message = document.getElementById('toastMessage');
             message.textContent = 'Digite exatamente "' + nomeCompleto + '" para confirmar.';
@@ -328,13 +327,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
-        // Desabilitar botão para evitar duplo clique
         btnConfirmar.disabled = true;
         btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
     });
 
     console.log('😢 Página de saída da igreja carregada');
     console.log('👤 Usuário: {{ $user->nome }}');
+    console.log('🏷️ Nível: {{ $user->nivel ?? "usuario" }}');
 });
 </script>
 @endpush

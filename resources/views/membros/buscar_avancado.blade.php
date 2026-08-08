@@ -322,6 +322,15 @@
         transform: translateY(-1px);
     }
 
+    .btn-editar {
+        background: #ff9800;
+    }
+
+    .btn-editar:hover {
+        background: #e65100;
+        transform: translateY(-1px);
+    }
+
     /* Empty State */
     .empty-state {
         text-align: center;
@@ -524,7 +533,8 @@
                 <i class="fas fa-eraser"></i> Limpar Filtros
             </a>
 
-            @if(request()->anyFilled(['nome', 'matricula', 'email', 'documento', 'cidade', 'uf', 'congregacao', 'funcao', 'status', 'data_nascimento_inicio', 'data_nascimento_fim', 'data_cadastro_inicio', 'data_cadastro_fim']))
+            {{-- ⭐ BOTÕES DE EXPORTAÇÃO - APENAS QUEM TEM PERMISSÃO --}}
+            @if(auth()->user()?->pode('exportar_membros') && request()->anyFilled(['nome', 'matricula', 'email', 'documento', 'cidade', 'uf', 'congregacao', 'funcao', 'status', 'data_nascimento_inicio', 'data_nascimento_fim', 'data_cadastro_inicio', 'data_cadastro_fim']))
                 <button type="submit" name="exportar" value="1" class="btn btn-exportar">
                     <i class="fas fa-file-export"></i> Exportar CSV
                 </button>
@@ -543,7 +553,7 @@
                 Total: <span>{{ $membros instanceof \Illuminate\Pagination\LengthAwarePaginator ? $membros->total() : $membros->count() }}</span> membros encontrados
             </div>
             <div class="opcoes">
-                <select id="limit" onchange="document.getElementById('formBusca').submit()">
+                <select id="limit" name="limit" onchange="document.getElementById('formBusca').submit()">
                     <option value="10" {{ request('limit') == 10 ? 'selected' : '' }}>10 por página</option>
                     <option value="20" {{ request('limit') == 20 ? 'selected' : '' }}>20 por página</option>
                     <option value="50" {{ request('limit') == 50 ? 'selected' : '' }}>50 por página</option>
@@ -573,10 +583,18 @@
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
                                         <div class="avatar-mini">
-                                            @if($membro->foto)
-                                                <img src="{{ route('imagem.foto', ['filename' => $membro->foto]) }}" alt="{{ $membro->nome }}">
+                                            @php
+                                                $fotoNome = $membro->foto ?? null;
+                                                $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                                                $inicial = substr($membro->nome, 0, 1);
+                                            @endphp
+                                            
+                                            @if($fotoUrl)
+                                                <img src="{{ $fotoUrl }}" 
+                                                     alt="{{ $membro->nome }}"
+                                                     onerror="this.style.display='none'; this.parentElement.textContent='{{ $inicial }}';">
                                             @else
-                                                {{ substr($membro->nome, 0, 1) }}
+                                                {{ $inicial }}
                                             @endif
                                         </div>
                                         <span>{{ $membro->nome }}</span>
@@ -604,9 +622,18 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('membros.show', $membro->matricula) }}" class="btn-acao btn-ver">
-                                        <i class="fas fa-eye"></i> Ver
-                                    </a>
+                                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                        <a href="{{ route('membros.show', $membro->matricula) }}" class="btn-acao btn-ver">
+                                            <i class="fas fa-eye"></i> Ver
+                                        </a>
+                                        
+                                        {{-- ⭐ BOTÃO EDITAR - APENAS QUEM TEM PERMISSÃO --}}
+                                        @if(auth()->user()?->pode('editar_membro', $membro))
+                                            <a href="{{ route('admin.membros.edit', $membro->matricula) }}" class="btn-acao btn-editar">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach

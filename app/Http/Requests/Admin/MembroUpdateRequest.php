@@ -9,17 +9,37 @@ class MembroUpdateRequest extends FormRequest
     const UF_LIST = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
     const STATUS_LIST = ['Ativo', 'Inativo', 'Pendente', 'Transferido'];
     const ESTADO_CIVIL_LIST = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo'];
+    const NIVEL_LIST = ['usuario', 'secretario', 'admin'];
 
     public function authorize()
     {
-        return true;
+        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
+        $user = auth()->user();
+        
+        if (!$user) {
+            return false;
+        }
+
+        // Pega a matrícula da rota
+        $matricula = $this->route('matricula');
+        
+        // Busca o membro
+        $membro = \App\Models\Filiado::where('matricula', $matricula)->first();
+        
+        if (!$membro) {
+            return false;
+        }
+
+        // Verifica se o usuário pode editar este membro
+        return $user->pode('editar_membro', $membro);
     }
 
     public function rules()
     {
         $matricula = $this->route('matricula');
+        $user = auth()->user();
         
-        return [
+        $rules = [
             'nome' => 'required|string|max:255',
             'nome_carteira' => 'nullable|string|max:100',
             'email' => "required|email|unique:filiado,email,{$matricula},matricula",
@@ -43,6 +63,13 @@ class MembroUpdateRequest extends FormRequest
             'status' => 'required|string|in:' . implode(',', self::STATUS_LIST),
             'senha' => 'nullable|string|min:6|confirmed',
         ];
+
+        // ⭐ APENAS ADMIN PODE ALTERAR O NÍVEL
+        if ($user && $user->isAdmin()) {
+            $rules['nivel'] = 'nullable|string|in:' . implode(',', self::NIVEL_LIST);
+        }
+
+        return $rules;
     }
 
     public function messages()
@@ -68,6 +95,21 @@ class MembroUpdateRequest extends FormRequest
             'status.required' => 'O status é obrigatório.',
             'senha.min' => 'A nova senha deve ter no mínimo 6 caracteres.',
             'senha.confirmed' => 'A confirmação da senha não coincide.',
+            'nivel.in' => 'Selecione um nível de permissão válido.',
         ];
+    }
+
+    /**
+     * ⭐ PREPARA OS DADOS PARA VALIDAÇÃO
+     */
+    protected function prepareForValidation()
+    {
+        // Se o usuário atual não for admin, remove o campo nivel
+        $user = auth()->user();
+        if ($user && !$user->isAdmin()) {
+            $this->merge([
+                'nivel' => null
+            ]);
+        }
     }
 }

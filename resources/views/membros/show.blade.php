@@ -535,25 +535,25 @@
         
         <!-- ===== HEADER ===== -->
         <div class="perfil-header">
-            <!-- Ações do Topo (Admin) -->
+            <!-- Ações do Topo -->
             <div class="perfil-actions-top">
-                <!-- ⭐ IMPRIMIR - APENAS ADMIN -->
-                @if(Auth::check() && Auth::user()->canEditMembers())
+                <!-- ⭐ IMPRIMIR - VERIFICA PERMISSÃO -->
+                @if(Auth::check() && Auth::user()->pode('editar_membro', $membro))
                     <button class="icon-btn" onclick="window.print()" title="Imprimir">
                         <i class="fas fa-print"></i>
                     </button>
                 @endif
                 
-                <!-- ⭐ EDITAR - APENAS ADMIN -->
-                @if(Auth::check() && Auth::user()->canEditMembers())
+                <!-- ⭐ EDITAR - VERIFICA PERMISSÃO -->
+                @if(Auth::check() && Auth::user()->pode('editar_membro', $membro))
                     <a href="{{ route('admin.membros.edit', $membro->matricula) }}" 
                        class="icon-btn warning" title="Editar">
                         <i class="fas fa-edit"></i>
                     </a>
                 @endif
                 
-                <!-- ⭐ EXCLUIR - APENAS ADMIN -->
-                @if(Auth::check() && Auth::user()->canDeleteMembers())
+                <!-- ⭐ EXCLUIR - VERIFICA PERMISSÃO -->
+                @if(Auth::check() && Auth::user()->pode('excluir_membro'))
                     <button class="icon-btn danger" 
                             data-matricula="{{ $membro->matricula }}"
                             data-nome="{{ addslashes($membro->nome) }}"
@@ -571,10 +571,16 @@
             <div class="perfil-avatar-wrapper">
                 <!-- Avatar -->
                 <div class="perfil-avatar">
-                    @if(isset($membro->foto) && $membro->foto)
-                        <img src="{{ route('imagem.foto', ['filename' => $membro->foto]) }}" 
+                    @php
+                        $fotoNome = $membro->foto ?? null;
+                        $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                    @endphp
+                    
+                    @if($fotoUrl)
+                        <img src="{{ $fotoUrl }}" 
                              alt="Foto de {{ $membro->nome }}"
-                             id="fotoPerfil">
+                             id="fotoPerfil"
+                             onerror="this.style.display='none'; this.parentElement.textContent='{{ substr($membro->nome, 0, 1) }}';">
                     @else
                         {{ substr($membro->nome, 0, 1) }}
                     @endif
@@ -608,7 +614,6 @@
 
             <!-- ===== INFO GRID ===== -->
             <div class="info-grid">
-                <!-- Coluna 1 -->
                 <div>
                     <div class="info-item">
                         <span class="label"><i class="fas fa-envelope"></i> Email</span>
@@ -628,7 +633,6 @@
                     </div>
                 </div>
 
-                <!-- Coluna 2 -->
                 <div>
                     <div class="info-item">
                         <span class="label"><i class="fas fa-water"></i> Batismo</span>
@@ -663,19 +667,16 @@
             AÇÕES - ÍCONES MODERNOS (ESTILO REDE SOCIAL)
             ============================================================ -->
             <div class="perfil-actions">
-                <!-- Voltar -->
                 <a href="{{ route('membros.index') }}" class="action-btn" title="Voltar">
                     <i class="fas fa-arrow-left"></i>
                     <span class="btn-text">Voltar</span>
                 </a>
 
-                <!-- Cartão -->
                 <a href="{{ route('membro.cartao', $membro->matricula) }}" class="action-btn info" target="_blank" title="Ver Cartão">
                     <i class="fas fa-id-card"></i>
                     <span class="btn-text">Cartão</span>
                 </a>
 
-                <!-- ⭐ CURTIR - TODOS -->
                 @if(Auth::check() && Auth::user()->matricula != $membro->matricula)
                     <button class="action-btn" id="btnCurtir" title="Curtir">
                         <i class="fas fa-heart" id="curtirIcon"></i>
@@ -683,7 +684,6 @@
                     </button>
                 @endif
 
-                <!-- ⭐ SEGUIR - TODOS -->
                 @if(Auth::check() && Auth::user()->matricula != $membro->matricula)
                     <button class="action-btn success" id="btnSeguir" title="Seguir">
                         <i class="fas fa-user-plus" id="seguirIcon"></i>
@@ -691,13 +691,11 @@
                     </button>
                 @endif
 
-                <!-- ⭐ COMPARTILHAR - TODOS -->
                 <button class="action-btn primary" id="btnCompartilhar" title="Compartilhar">
                     <i class="fas fa-share-alt"></i>
                     <span class="btn-text">Compartilhar</span>
                 </button>
 
-                <!-- ⭐ WHATSAPP - TODOS -->
                 <button class="action-btn whatsapp" id="btnWhatsApp" title="WhatsApp">
                     <i class="fab fa-whatsapp"></i>
                     <span class="btn-text">WhatsApp</span>
@@ -707,8 +705,8 @@
     </div>
 </div>
 
-<!-- ⭐ MODAL DE EXCLUSÃO - APENAS ADMIN -->
-@if(Auth::check() && Auth::user()->canDeleteMembers())
+<!-- ⭐ MODAL DE EXCLUSÃO - VERIFICA PERMISSÃO -->
+@if(Auth::check() && Auth::user()->pode('excluir_membro'))
 <div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -738,7 +736,6 @@
 
 @push('scripts')
 <script>
-// ⭐ FUNÇÃO EXCLUIR - APENAS ADMIN
 function excluirMembro(elemento) {
     const matricula = elemento.dataset.matricula;
     const nome = elemento.dataset.nome;
@@ -764,7 +761,7 @@ document.getElementById('formExcluir')?.addEventListener('submit', function(e) {
     }
 });
 
-// ⭐ Curtir
+// ⭐ CURTIR
 const btnCurtir = document.getElementById('btnCurtir');
 if (btnCurtir) {
     btnCurtir.addEventListener('click', function() {
@@ -778,6 +775,7 @@ if (btnCurtir) {
             text.textContent = 'Curtir';
             this.style.background = '';
             this.style.color = '';
+            this.style.borderColor = '';
             showToast('💔 Você descurtiu este membro!', 'info');
         } else {
             this.classList.add('curtido');
@@ -791,7 +789,7 @@ if (btnCurtir) {
     });
 }
 
-// ⭐ Seguir
+// ⭐ SEGUIR
 const btnSeguir = document.getElementById('btnSeguir');
 if (btnSeguir) {
     btnSeguir.addEventListener('click', function() {
@@ -805,6 +803,7 @@ if (btnSeguir) {
             text.textContent = 'Seguir';
             this.style.background = '';
             this.style.color = '';
+            this.style.borderColor = '';
             showToast('👋 Você deixou de seguir este membro!', 'info');
         } else {
             this.classList.add('seguindo');
@@ -818,7 +817,7 @@ if (btnSeguir) {
     });
 }
 
-// ⭐ Compartilhar
+// ⭐ COMPARTILHAR
 document.getElementById('btnCompartilhar')?.addEventListener('click', function() {
     const url = window.location.href;
     const nome = '{{ $membro->nome }}';
@@ -838,7 +837,7 @@ document.getElementById('btnCompartilhar')?.addEventListener('click', function()
     }
 });
 
-// ⭐ WhatsApp
+// ⭐ WHATSAPP
 document.getElementById('btnWhatsApp')?.addEventListener('click', function() {
     const nome = '{{ $membro->nome }}';
     const matricula = '{{ $membro->matricula }}';
@@ -849,7 +848,7 @@ document.getElementById('btnWhatsApp')?.addEventListener('click', function() {
     window.open(url, '_blank');
 });
 
-// ⭐ Toast
+// ⭐ TOAST
 function showToast(message, type = 'info') {
     const colors = {
         success: '#4CAF50',
@@ -886,14 +885,14 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-const style = document.createElement('style');
-style.textContent = `
+const styleToast = document.createElement('style');
+styleToast.textContent = `
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateX(-50%) translateY(20px); }
         to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 `;
-document.head.appendChild(style);
+document.head.appendChild(styleToast);
 
 console.log('🕊️ Perfil Moderno carregado');
 console.log('👤 {{ $membro->nome }} ({{ $membro->matricula }})');

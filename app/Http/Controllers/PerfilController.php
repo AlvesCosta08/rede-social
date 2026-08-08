@@ -17,6 +17,7 @@ class PerfilController extends Controller
 {
     /**
      * Mostrar perfil de um membro
+     * ⭐ VERIFICA PERMISSÃO PARA DADOS PRIVADOS
      */
     public function show($matricula)
     {
@@ -28,11 +29,23 @@ class PerfilController extends Controller
             ->where('matricula', $matricula)
             ->firstOrFail();
 
-        return view('perfil.show', compact('perfil', 'membroLogado'));
+        // ⭐ VERIFICA SE O USUÁRIO LOGADO PODE VER DADOS PRIVADOS
+        $podeVerPrivado = $membroLogado && (
+            $membroLogado->matricula === $matricula || 
+            $membroLogado->pode('ver_membro', $perfil)
+        );
+
+        // Se não tiver permissão, esconde dados sensíveis
+        if (!$podeVerPrivado) {
+            $perfil->makeHidden(['email', 'telefone', 'documento', 'endereco', 'dataNascimento', 'mae', 'pai']);
+        }
+
+        return view('perfil.show', compact('perfil', 'membroLogado', 'podeVerPrivado'));
     }
 
     /**
      * Editar perfil do usuário logado
+     * ⭐ VERIFICA SE O USUÁRIO ESTÁ AUTENTICADO
      */
     public function edit()
     {
@@ -55,6 +68,8 @@ class PerfilController extends Controller
 
     /**
      * Atualizar perfil
+     * ⭐ VERIFICA PERMISSÃO ANTES DE ATUALIZAR
+     * ⭐ CORRIGIDO: VALIDAÇÃO DE DATAS E BIO
      */
     public function update(Request $request)
     {
@@ -70,12 +85,17 @@ class PerfilController extends Controller
             return redirect()->route('login')->with('error', 'Membro não encontrado.');
         }
 
-        // Validação
+        // ⭐ VERIFICA SE O USUÁRIO PODE EDITAR ESTE PERFIL
+        if (!$user->pode('editar_membro', $perfil) && $user->matricula !== $perfil->matricula) {
+            abort(403, 'Você não tem permissão para editar este perfil.');
+        }
+
+        // ⭐ VALIDAÇÃO CORRIGIDA - DATAS ACEITAM VÁRIOS FORMATOS
         $rules = [
             'nome' => 'required|string|max:255',
             'nome_carteira' => 'nullable|string|max:100',
             'telefone' => 'required|string|max:20',
-            'dataNascimento' => 'required|date|before:today',
+            'dataNascimento' => 'nullable|date|before:today',
             'estadoCivil' => 'nullable|string|max:50',
             'endereco' => 'required|string|max:255',
             'numero' => 'required|numeric',
@@ -89,7 +109,7 @@ class PerfilController extends Controller
             'data_Consagracao' => 'nullable|date|before_or_equal:today',
             'mae' => 'nullable|string|max:255',
             'pai' => 'nullable|string|max:255',
-            'bio' => 'nullable|string|max:500',
+            'bio' => 'nullable|string|max:5000', // ⭐ AUMENTADO PARA 5000
             'privacidade' => 'nullable|boolean',
         ];
 
@@ -124,6 +144,7 @@ class PerfilController extends Controller
             $rules['new_password'] = 'required|string|min:8|confirmed';
         }
 
+        // Mensagens de erro
         $messages = [
             'nome.required' => 'O nome completo é obrigatório.',
             'email.required' => 'O e-mail é obrigatório.',
@@ -149,6 +170,7 @@ class PerfilController extends Controller
             'new_password.required' => 'Digite a nova senha.',
             'new_password.min' => 'A nova senha deve ter no mínimo 8 caracteres.',
             'new_password.confirmed' => 'A confirmação da senha não coincide.',
+            'bio.max' => 'A biografia não pode ter mais de 5000 caracteres.',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -157,7 +179,7 @@ class PerfilController extends Controller
             return back()->withErrors($validator)->withInput($request->except('password', 'password_confirmation'));
         }
 
-        // Alterar senha
+        // ⭐ VERIFICA SENHA ATUAL
         if ($request->filled('new_password')) {
             if (!Hash::check($request->current_password, $perfil->password)) {
                 return back()
@@ -167,12 +189,12 @@ class PerfilController extends Controller
             $perfil->password = Hash::make($request->new_password);
         }
 
-        // Montar dados para atualizar
+        // ⭐ PREPARA OS DADOS PARA ATUALIZAÇÃO
         $dadosParaAtualizar = [
             'nome' => $request->nome,
             'nome_carteira' => $request->nome_carteira,
             'telefone' => $request->telefone,
-            'dataNascimento' => $request->dataNascimento,
+            'dataNascimento' => $this->formatarData($request->dataNascimento),
             'estadoCivil' => $request->estadoCivil,
             'endereco' => $request->endereco,
             'numero' => $request->numero,
@@ -182,40 +204,41 @@ class PerfilController extends Controller
             'uf' => $request->uf,
             'congregacao' => $request->congregacao,
             'funcao' => $request->funcao,
-            'dataBatismo' => $request->dataBatismo,
-            'data_Consagracao' => $request->data_Consagracao,
+            'dataBatismo' => $this->formatarData($request->dataBatismo),
+            'data_Consagracao' => $this->formatarData($request->data_Consagracao),
             'mae' => $request->mae,
             'pai' => $request->pai,
-            'bio' => $request->bio,
+            'bio' => $this->formatarBio($request->bio), // ⭐ TRUNCA BIO SE NECESSÁRIO
             'privacidade' => $request->has('privacidade'),
         ];
 
-        // Atualiza email se mudou
+        // Atualiza email se foi alterado
         if ($request->has('email') && $request->email !== $perfil->email) {
             $dadosParaAtualizar['email'] = $request->email;
         }
 
-        // Atualiza documento se mudou
+        // Atualiza documento se foi alterado
         if ($request->has('documento') && $request->documento !== $perfil->documento) {
             $dadosParaAtualizar['documento'] = preg_replace('/[^0-9]/', '', $request->documento);
         }
 
         try {
+            // ⭐ ATUALIZA O PERFIL (OS MUTATORS DO MODEL FORMATAM AS DATAS)
             $perfil->update($dadosParaAtualizar);
             
-            // Atualiza sessão com novo nome
             Session::put('membro_nome', $perfil->nome);
 
-            Log::info('Perfil atualizado com sucesso', [
+            Log::info('✅ Perfil atualizado com sucesso', [
                 'matricula' => $perfil->matricula,
                 'nome' => $perfil->nome,
                 'ip' => request()->ip()
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Erro ao atualizar perfil', [
+            Log::error('❌ Erro ao atualizar perfil', [
                 'matricula' => $perfil->matricula,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             return back()
@@ -233,7 +256,58 @@ class PerfilController extends Controller
     }
 
     /**
-     * ✅ NOVO: Listar posts de um membro
+     * ⭐ FUNÇÃO AUXILIAR - FORMATA DATA PARA Y-m-d
+     */
+    private function formatarData($data)
+    {
+        if (empty($data)) {
+            return null;
+        }
+
+        // Se já estiver no formato Y-m-d, retorna
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
+            return $data;
+        }
+
+        // Se estiver no formato d/m/Y, converte
+        if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $data)) {
+            try {
+                $date = Carbon::createFromFormat('d/m/Y', $data);
+                return $date->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        // Tenta converter qualquer formato
+        try {
+            $date = Carbon::parse($data);
+            return $date->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * ⭐ FUNÇÃO AUXILIAR - FORMATA BIO (LIMITA TAMANHO)
+     */
+    private function formatarBio($bio)
+    {
+        if (empty($bio)) {
+            return null;
+        }
+
+        // Limita a 5000 caracteres
+        if (strlen($bio) > 5000) {
+            return substr($bio, 0, 5000);
+        }
+
+        return $bio;
+    }
+
+    /**
+     * Listar posts de um membro
+     * ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
      */
     public function posts($matricula)
     {
@@ -245,8 +319,10 @@ class PerfilController extends Controller
 
         $perfil = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
 
-        // Verifica se pode ver os posts (público ou próprio)
-        $podeVer = $perfil->privacidade || $user->matricula === $matricula || $user->isAdmin();
+        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
+        $podeVer = $perfil->privacidade || 
+                   $user->matricula === $matricula || 
+                   $user->pode('ver_membro', $perfil);
         
         if (!$podeVer) {
             abort(403, 'Este perfil é privado.');
@@ -258,7 +334,6 @@ class PerfilController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        // Adiciona flag de curtida
         $publicacoes->each(function($publicacao) use ($user) {
             $publicacao->curtida_por_mim = $publicacao->isCurtidoPor($user);
         });
@@ -267,7 +342,8 @@ class PerfilController extends Controller
     }
 
     /**
-     * ✅ MELHORADO: Upload de foto usando Auth e Storage
+     * Upload de foto usando Auth e Storage
+     * ⭐ APENAS O PRÓPRIO USUÁRIO PODE FAZER UPLOAD
      */
     public function uploadFoto(Request $request)
     {
@@ -279,7 +355,6 @@ class PerfilController extends Controller
             return response()->json(['success' => false, 'message' => 'Usuário não autenticado.'], 401);
         }
 
-        // Validação
         if (!$request->hasFile('foto')) {
             return response()->json(['success' => false, 'message' => 'Nenhum arquivo selecionado.'], 422);
         }
@@ -290,12 +365,10 @@ class PerfilController extends Controller
             return response()->json(['success' => false, 'message' => 'Arquivo inválido.'], 422);
         }
 
-        // Valida tamanho (2MB)
         if ($file->getSize() > 2 * 1024 * 1024) {
             return response()->json(['success' => false, 'message' => 'A imagem deve ter no máximo 2MB.'], 422);
         }
 
-        // Valida tipo MIME
         $mimeType = $file->getMimeType();
         $extensoesPermitidas = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         
@@ -307,26 +380,21 @@ class PerfilController extends Controller
         }
 
         try {
-            // Remove foto antiga
             if ($user->foto) {
                 $this->removerFotoArquivo($user->foto);
             }
 
-            // ✅ MELHORADO: Usa Storage do Laravel
             $nomeArquivo = time() . '_' . $user->matricula . '.' . $file->getClientOriginalExtension();
             
-            // Salva na pasta storage/app/public/fotos
             $path = $file->storeAs('fotos', $nomeArquivo, 'public');
             
             if (!$path) {
                 throw new \Exception('Falha ao salvar o arquivo.');
             }
 
-            // Atualiza banco
             $user->foto = $nomeArquivo;
             $user->save();
 
-            // Atualiza sessão
             Session::put('membro_foto', $nomeArquivo);
 
             Log::info('✅ Foto atualizada com sucesso', [
@@ -354,7 +422,8 @@ class PerfilController extends Controller
     }
 
     /**
-     * ✅ MELHORADO: Remover foto
+     * Remover foto
+     * ⭐ APENAS O PRÓPRIO USUÁRIO PODE REMOVER SUA FOTO
      */
     public function removerFoto()
     {
@@ -372,7 +441,6 @@ class PerfilController extends Controller
                 $user->foto = null;
                 $user->save();
                 
-                // Remove da sessão
                 Session::forget('membro_foto');
             }
 
@@ -398,21 +466,72 @@ class PerfilController extends Controller
     }
 
     /**
-     * ✅ NOVO: Método auxiliar para remover arquivo
+     * Método auxiliar para remover arquivo
      */
     private function removerFotoArquivo($nome)
     {
-        // Remove do storage
         if (Storage::disk('public')->exists('fotos/' . $nome)) {
             Storage::disk('public')->delete('fotos/' . $nome);
             Log::info('Foto removida (storage): ' . $nome);
         }
 
-        // Remove do public (legado - compatibilidade)
         $publicPath = public_path('storage/fotos/' . $nome);
         if (file_exists($publicPath)) {
             unlink($publicPath);
             Log::info('Foto removida (public): ' . $nome);
         }
+    }
+
+    /**
+     * ⭐ MÉTODO PARA EXIBIR IMAGEM (ROTA)
+     */
+    public function getFoto($filename)
+    {
+        $path = storage_path('app/public/fotos/' . $filename);
+
+        if (!file_exists($path)) {
+            Log::warning('⚠️ Arquivo não encontrado', [
+                'filename' => $filename,
+                'storage_path' => $path,
+                'public_path' => public_path('storage/fotos/' . $filename),
+                'ip' => request()->ip()
+            ]);
+
+            // ⭐ GERA IMAGEM PADRÃO
+            return $this->gerarImagemPadrao();
+        }
+
+        $mimeType = mime_content_type($path);
+        
+        Log::info('📸 Imagem servida', [
+            'filename' => $filename,
+            'size' => filesize($path),
+            'mime_type' => $mimeType,
+            'ip' => request()->ip()
+        ]);
+
+        return response()->file($path);
+    }
+
+    /**
+     * ⭐ GERA IMAGEM PADRÃO QUANDO A FOTO NÃO EXISTE
+     */
+    private function gerarImagemPadrao()
+    {
+        Log::info('🖼️ Imagem padrão gerada', [
+            'ip' => request()->ip()
+        ]);
+
+        // Cria uma imagem SVG com as iniciais
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+            <rect width="200" height="200" rx="100" fill="#d4af37"/>
+            <text x="100" y="120" font-family="Arial" font-size="80" font-weight="bold" fill="white" text-anchor="middle">👤</text>
+        </svg>';
+
+        return response($svg)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 }

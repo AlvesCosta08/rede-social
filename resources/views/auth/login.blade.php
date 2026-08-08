@@ -526,11 +526,18 @@
         <div class="login-header">
             <div class="logo-igreja">
                 <div class="cross-icon">
-                    <img src="/sistemas/conexao-igreja/public/imagens/logo-branco.png" 
-                         alt="Logo ADTC2 MARANGUAPE"
-                         loading="lazy"
-                         onerror="this.style.display='none'; this.parentElement.querySelector('.logo-fallback').style.display='flex';">
-                    <div class="logo-fallback">
+                    @php
+                        $logoPath = public_path('imagens/logo-branco.png');
+                        $logoUrl = file_exists($logoPath) ? asset('imagens/logo-branco.png') : null;
+                    @endphp
+                    
+                    @if($logoUrl)
+                        <img src="{{ $logoUrl }}" 
+                             alt="Logo ADTC2 MARANGUAPE"
+                             loading="lazy"
+                             onerror="this.style.display='none'; this.parentElement.querySelector('.logo-fallback').style.display='flex';">
+                    @endif
+                    <div class="logo-fallback" style="{{ $logoUrl ? 'display: none;' : 'display: flex;' }}">
                         <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="17" y="2" width="16" height="46" rx="3" fill="url(#goldGrad)"/>
                             <rect x="2" y="17" width="46" height="16" rx="3" fill="url(#goldGrad)"/>

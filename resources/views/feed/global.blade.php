@@ -657,7 +657,7 @@
     <div class="feed-nav">
         <a href="{{ route('feed.index') }}">
             <i class="fas fa-rss"></i> Seguindo
-            <span class="badge-seguindo">{{ $membro->seguindo_count }}</span>
+            <span class="badge-seguindo">{{ $membro->seguindo_count ?? 0 }}</span>
         </a>
         <a href="{{ route('feed.global') }}" class="active">
             <i class="fas fa-globe"></i> Global
@@ -687,16 +687,24 @@
     <!-- ===== NOVA PUBLICAÇÃO ===== -->
     <div class="nova-publicacao">
         <div class="autor-info">
-            @if($membro->foto)
+            @php
+                $fotoNome = $membro->foto ?? null;
+                $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                $inicial = substr($membro->nome, 0, 1);
+            @endphp
+            
+            @if($fotoUrl)
                 <div class="avatar">
-                    <img src="{{ route('imagem.foto', $membro->foto) }}" alt="{{ $membro->nome }}">
+                    <img src="{{ $fotoUrl }}" 
+                         alt="{{ $membro->nome }}"
+                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $inicial }}';">
                 </div>
             @else
-                <div class="avatar">{{ substr($membro->nome, 0, 1) }}</div>
+                <div class="avatar">{{ $inicial }}</div>
             @endif
             <div>
                 <div class="nome">{{ $membro->nome }}</div>
-                <div class="funcao">{{ $membro->funcao_formatada }}</div>
+                <div class="funcao">{{ $membro->funcao_formatada ?? 'Membro' }}</div>
             </div>
         </div>
         <form method="POST" action="{{ route('feed.publicar') }}" id="formPublicacao">
@@ -716,22 +724,31 @@
             @foreach($publicacoes as $publicacao)
                 <div class="publicacao" id="publicacao-{{ $publicacao->id }}" data-id="{{ $publicacao->id }}">
                     <div class="header">
-                        <a href="{{ route('perfil.show', $publicacao->autor->matricula) }}" class="autor">
-                            @if($publicacao->autor->foto)
+                        <a href="{{ route('perfil.show', $publicacao->autor->matricula ?? $publicacao->filiado_matricula) }}" class="autor">
+                            @php
+                                $autorFotoNome = $publicacao->autor->foto ?? null;
+                                $autorFotoUrl = $autorFotoNome ? route('imagem.foto', ['filename' => $autorFotoNome]) : null;
+                                $autorInicial = substr($publicacao->autor->nome ?? 'U', 0, 1);
+                            @endphp
+                            
+                            @if($autorFotoUrl)
                                 <div class="avatar">
-                                    <img src="{{ route('imagem.foto', $publicacao->autor->foto) }}" alt="{{ $publicacao->autor->nome }}">
+                                    <img src="{{ $autorFotoUrl }}" 
+                                         alt="{{ $publicacao->autor->nome ?? 'Usuário' }}"
+                                         onerror="this.style.display='none'; this.parentElement.textContent='{{ $autorInicial }}';">
                                 </div>
                             @else
-                                <div class="avatar">{{ substr($publicacao->autor->nome, 0, 1) }}</div>
+                                <div class="avatar">{{ $autorInicial }}</div>
                             @endif
                             <div>
-                                <div class="nome">{{ $publicacao->autor->nome }}</div>
-                                <div class="funcao">{{ $publicacao->autor->funcao_formatada }}</div>
+                                <div class="nome">{{ $publicacao->autor->nome ?? 'Usuário' }}</div>
+                                <div class="funcao">{{ $publicacao->autor->funcao_formatada ?? 'Membro' }}</div>
                             </div>
                         </a>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span class="data">{{ $publicacao->created_at->diffForHumans() }}</span>
-                            @if($publicacao->filiado_matricula == $membro->matricula)
+                            {{-- ⭐ DELETAR: PRÓPRIO USUÁRIO OU ADMIN/SECRETÁRIO --}}
+                            @if($publicacao->filiado_matricula == $membro->matricula || auth()->user()?->pode('excluir_membro'))
                                 <button type="button" class="btn-delete" data-id="{{ $publicacao->id }}" title="Remover publicação">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -746,7 +763,7 @@
                                 class="btn-curtir {{ $publicacao->isCurtidoPor($membro) ? 'curtido' : '' }}" 
                                 data-id="{{ $publicacao->id }}">
                             <i class="fas fa-heart"></i>
-                            <span class="curtidas-count" id="curtidas-{{ $publicacao->id }}">{{ $publicacao->curtidas_count }}</span>
+                            <span class="curtidas-count" id="curtidas-{{ $publicacao->id }}">{{ $publicacao->curtidas->count() }}</span>
                         </button>
                         <button type="button" class="btn-comentar" data-id="{{ $publicacao->id }}">
                             <i class="fas fa-comment"></i>
@@ -758,15 +775,25 @@
                         <div id="comentarios-lista-{{ $publicacao->id }}">
                             @foreach($publicacao->comentarios as $comentario)
                                 <div class="comentario" id="comentario-{{ $comentario->id }}">
-                                    @if($comentario->autor->foto)
+                                    @php
+                                        $comentFotoNome = $comentario->autor->foto ?? null;
+                                        $comentFotoUrl = $comentFotoNome ? route('imagem.foto', ['filename' => $comentFotoNome]) : null;
+                                        $comentInicial = substr($comentario->autor->nome ?? '?', 0, 1);
+                                    @endphp
+                                    
+                                    @if($comentFotoUrl)
                                         <div class="avatar-mini">
-                                            <img src="{{ route('imagem.foto', $comentario->autor->foto) }}" alt="{{ $comentario->autor->nome }}">
+                                            <img src="{{ $comentFotoUrl }}" 
+                                                 alt="{{ $comentario->autor->nome ?? 'Usuário' }}"
+                                                 onerror="this.style.display='none'; this.parentElement.textContent='{{ $comentInicial }}';">
                                         </div>
+                                    @elseif($comentario->autor)
+                                        <div class="avatar-mini">{{ $comentInicial }}</div>
                                     @else
-                                        <div class="avatar-mini">{{ substr($comentario->autor->nome, 0, 1) }}</div>
+                                        <div class="avatar-mini">?</div>
                                     @endif
                                     <div class="conteudo">
-                                        <span class="nome-autor">{{ $comentario->autor->nome }}</span>
+                                        <span class="nome-autor">{{ $comentario->autor?->nome ?? 'Usuário removido' }}</span>
                                         {{ $comentario->conteudo }}
                                         <div style="font-size: 0.7rem; color: var(--text-secondary); opacity: 0.5; margin-top: 2px;">
                                             {{ $comentario->created_at->diffForHumans() }}
@@ -821,7 +848,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================================================
-    // BUSCA DE MEMBROS (AJAX) - CORRIGIDO COM ROTA NOMEADA
+    // BUSCA DE MEMBROS (AJAX)
     // ============================================================
     const buscaInput = document.getElementById('buscaMembros');
     const resultadosDiv = document.getElementById('resultadosBusca');
@@ -845,7 +872,6 @@ document.addEventListener('DOMContentLoaded', function() {
         listaResultados.innerHTML = '';
         resultadosDiv.classList.add('show');
 
-        // ✅ CORRIGIDO: Usando rota nomeada
         const url = '{{ route("membros.autocomplete") }}' + '?q=' + encodeURIComponent(query);
 
         fetch(url, {
@@ -871,6 +897,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let html = '';
             data.forEach(membro => {
+                // ⭐ CORRIGIDO: Usa a URL correta da imagem
                 const fotoHtml = membro.foto 
                     ? `<img src="${membro.foto}" alt="${membro.nome}">` 
                     : membro.nome.charAt(0);
@@ -959,7 +986,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // CURTIR PUBLICAÇÃO (AJAX) - CORRIGIDO
+    // CURTIR PUBLICAÇÃO (AJAX)
     // ============================================================
     document.querySelectorAll('.btn-curtir').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -971,7 +998,6 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.pointerEvents = 'none';
             this.style.opacity = '0.6';
 
-            // ✅ CORRIGIDO: Usando rota nomeada
             const url = '{{ route("feed.curtir", ["id" => 0]) }}'.replace('0', id);
 
             fetch(url, {
@@ -1017,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // COMENTAR PUBLICAÇÃO (AJAX) - CORRIGIDO
+    // COMENTAR PUBLICAÇÃO (AJAX)
     // ============================================================
     document.querySelectorAll('.form-comentario').forEach(form => {
         form.addEventListener('submit', function(e) {
@@ -1030,7 +1056,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!conteudo) return;
 
             const formData = new FormData(this);
-            // ✅ CORRIGIDO: Usando rota nomeada
             const url = '{{ route("feed.comentar", ["id" => 0]) }}'.replace('0', id);
 
             fetch(url, {
@@ -1089,14 +1114,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // DELETAR PUBLICAÇÃO (AJAX) - CORRIGIDO
+    // DELETAR PUBLICAÇÃO (AJAX)
     // ============================================================
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = this.dataset.id;
             if (!confirm('Remover esta publicação?')) return;
 
-            // ✅ CORRIGIDO: Usando rota nomeada
             const url = '{{ route("feed.delete", ["id" => 0]) }}'.replace('0', id);
 
             fetch(url, {
@@ -1137,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // PUBLICAR NOVA (AJAX) - CORRIGIDO
+    // PUBLICAR NOVA (AJAX)
     // ============================================================
     const formPublicacao = document.getElementById('formPublicacao');
     const btnPublicar = document.getElementById('btnPublicar');
@@ -1160,7 +1184,6 @@ document.addEventListener('DOMContentLoaded', function() {
             btnPublicar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
 
             const formData = new FormData(this);
-            // ✅ CORRIGIDO: Usando rota nomeada
             const url = '{{ route("feed.publicar") }}';
 
             fetch(url, {

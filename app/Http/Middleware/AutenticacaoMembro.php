@@ -12,59 +12,73 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AutenticacaoMembro
 {
-    /**
-     * Handle an incoming request.
-     * 
-     * ⭐ MANTIDO PARA COMPATIBILIDADE COM CÓDIGO LEGADO
-     * ⭐ USA LARAVEL AUTH + SESSÃO
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        Log::info('=== MIDDLEWARE AUTENTICACAO MEMBRO ===');
-        Log::info('URL: ' . $request->fullUrl());
-
-        // ⭐ 1. TENTA USAR LARAVEL AUTH PRIMEIRO
+        // 1. TENTA USAR LARAVEL AUTH
         if (Auth::check()) {
             $user = Auth::user();
             
-            // Atualiza sessão para compatibilidade
-            Session::put('membro_logado', $user->matricula);
-            Session::put('membro_nome', $user->nome);
-            Session::put('membro_funcao', $user->funcao);
+            // ✅ VERIFICA STATUS DO USUÁRIO
+            if (!$this->isUsuarioAtivo($user)) {
+                Auth::logout();
+                Session::flush();
+                return redirect()->route('login')
+                    ->with('error', 'Sua conta está inativa. Entre em contato com o administrador.');
+            }
             
-            Log::info('USUÁRIO AUTENTICADO VIA LARAVEL AUTH: ' . $user->nome);
+            $this->sincronizarSessao($user);
             return $next($request);
         }
 
-        // ⭐ 2. FALLBACK: VERIFICA SESSÃO LEGADA
-        Log::info('Session membro_logado: ' . Session::get('membro_logado'));
-
-        if (!Session::has('membro_logado')) {
-            Log::info('REDIRECIONANDO PARA LOGIN - Sessão vazia');
-            return redirect()->route('login')->with('error', 'Faça login para acessar.');
-        }
-
-        $matricula = Session::get('membro_logado');
-        Log::info('Matrícula da sessão: ' . $matricula);
-        
-        $user = User::where('matricula', $matricula)->first();
-        Log::info('Usuário encontrado? ' . ($user ? 'SIM' : 'NÃO'));
-        
-        if ($user) {
-            Log::info('Status do usuário: ' . ($user->status ?? 'null'));
-        }
-        
-        // Verifica se o usuário existe e está ativo
-        if (!$user || !in_array(strtolower($user->status), ['ativo', 'membro'])) {
-            Log::warning('Usuário inválido ou inativo: ' . $matricula);
+        // 2. VERIFICA SESSÃO LEGADA (FALLBACK)
+        if (Session::has('membro_logado')) {
+            $matricula = Session::get('membro_logado');
+            $user = User::where('matricula', $matricula)->first();
+            
+            // ✅ VERIFICAÇÃO MAIS ROBUSTA
+            if ($user && $this->isUsuarioAtivo($user)) {
+                // ✅ LOGIN SEGURO COM VERIFICAÇÃO ADICIONAL
+                Auth::login($user);
+                $this->sincronizarSessao($user);
+                
+                Log::info('Usuário autenticado via sessão: ' . $user->matricula);
+                return $next($request);
+            }
+            
+            // Sessão inválida
+            Log::warning('Sessão inválida para matrícula: ' . $matricula);
             Session::flush();
-            return redirect()->route('login')->with('error', 'Sua conta está inativa.');
+            return redirect()->route('login')
+                ->with('error', 'Sessão expirada. Faça login novamente.');
         }
 
-        // ⭐ 3. LOGIN AUTOMÁTICO PARA COMPATIBILIDADE
-        Auth::login($user);
+        // 3. NÃO AUTENTICADO
+        return redirect()->route('login')
+            ->with('error', 'Faça login para acessar esta área.');
+    }
 
-        Log::info('USUÁRIO AUTENTICADO COM SUCESSO: ' . $user->nome);
-        return $next($request);
+    /**
+     * Verifica se o usuário está ativo
+     */
+    private function isUsuarioAtivo($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        
+        $statusAtivos = ['ativo', 'membro', 'active', 'activated'];
+        return in_array(strtolower($user->status ?? ''), $statusAtivos);
+    }
+
+    /**
+     * Sincroniza a sessão com os dados do usuário
+     */
+    private function sincronizarSessao($user): void
+    {
+        Session::put([
+            'membro_logado' => $user->matricula,
+            'membro_nome' => $user->nome,
+            'membro_funcao' => $user->funcao,
+        ]);
     }
 }

@@ -219,6 +219,14 @@
         object-fit: cover;
     }
 
+    .aniversariante-item .avatar .avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
     .aniversariante-item .info {
         flex: 1;
         min-width: 0;
@@ -258,6 +266,45 @@
         display: block;
         margin-bottom: 15px;
         opacity: 0.3;
+    }
+
+    /* ⭐ ALERTA DE ACESSO NEGADO */
+    .alert-danger {
+        background: #ffebee;
+        color: #c62828;
+        padding: 20px 25px;
+        border-radius: 12px;
+        border-left: 4px solid #c62828;
+        margin-bottom: 20px;
+    }
+
+    .alert-danger .btn-admin {
+        margin-top: 10px;
+    }
+
+    .btn-admin {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-admin-secondary {
+        background: #6c757d;
+    }
+
+    .btn-admin-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+        color: white;
     }
 
     @media (max-width: 768px) {
@@ -306,190 +353,209 @@
 
 @section('content')
 <div class="stats-container">
-    <!-- Cards de Estatísticas -->
-    <div class="stats-grid">
-        <div class="stat-card total">
-            <span class="icon">👥</span>
-            <div class="number">{{ $stats['total'] ?? 0 }}</div>
-            <div class="label">Total de Membros</div>
+    {{-- ⭐ VERIFICA PERMISSÃO --}}
+    @if(!auth()->user()?->pode('dashboard'))
+        <div class="alert-danger">
+            <strong>⛔ Acesso Negado</strong>
+            <p>Você não tem permissão para acessar as estatísticas.</p>
+            <a href="{{ route('admin.membros.index') }}" class="btn-admin btn-admin-secondary" style="display: inline-block;">
+                <span>🔙</span> Voltar
+            </a>
         </div>
-        <div class="stat-card ativos">
-            <span class="icon">✅</span>
-            <div class="number">{{ $stats['ativos'] ?? 0 }}</div>
-            <div class="label">Ativos</div>
+    @else
+        <!-- Cards de Estatísticas -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <span class="icon">👥</span>
+                <div class="number">{{ $stats['total'] ?? 0 }}</div>
+                <div class="label">Total de Membros</div>
+            </div>
+            <div class="stat-card ativos">
+                <span class="icon">✅</span>
+                <div class="number">{{ $stats['ativos'] ?? 0 }}</div>
+                <div class="label">Ativos</div>
+            </div>
+            <div class="stat-card inativos">
+                <span class="icon">❌</span>
+                <div class="number">{{ $stats['inativos'] ?? 0 }}</div>
+                <div class="label">Inativos</div>
+            </div>
+            <div class="stat-card transferidos">
+                <span class="icon">🔄</span>
+                <div class="number">{{ $stats['transferidos'] ?? 0 }}</div>
+                <div class="label">Transferidos</div>
+            </div>
+            <div class="stat-card saida">
+                <span class="icon">🚪</span>
+                <div class="number">{{ $stats['saida'] ?? 0 }}</div>
+                <div class="label">Saída</div>
+            </div>
         </div>
-        <div class="stat-card inativos">
-            <span class="icon">❌</span>
-            <div class="number">{{ $stats['inativos'] ?? 0 }}</div>
-            <div class="label">Inativos</div>
-        </div>
-        <div class="stat-card transferidos">
-            <span class="icon">🔄</span>
-            <div class="number">{{ $stats['transferidos'] ?? 0 }}</div>
-            <div class="label">Transferidos</div>
-        </div>
-        <div class="stat-card saida">
-            <span class="icon">🚪</span>
-            <div class="number">{{ $stats['saida'] ?? 0 }}</div>
-            <div class="label">Saída</div>
-        </div>
-    </div>
 
-    <!-- Gráficos -->
-    <div class="charts-grid">
-        <!-- Por Função -->
-        <div class="chart-card">
+        <!-- Gráficos -->
+        <div class="charts-grid">
+            <!-- Por Função -->
+            <div class="chart-card">
+                <h3>
+                    <span class="chart-icon">📌</span>
+                    Membros por Função
+                </h3>
+                <div class="chart-container">
+                    @if($porFuncao->count() > 0)
+                        @php
+                            $maxTotal = $porFuncao->max('total');
+                            $colors = ['gold', 'green', 'blue', 'purple', 'red', 'orange', 'teal', 'pink'];
+                            $colorIndex = 0;
+                        @endphp
+                        @foreach($porFuncao as $item)
+                            @php
+                                $percent = $maxTotal > 0 ? ($item->total / $maxTotal) * 100 : 0;
+                                $color = $colors[$colorIndex % count($colors)];
+                                $colorIndex++;
+                            @endphp
+                            <div class="bar-item">
+                                <span class="bar-label">{{ $item->funcao ?? 'Não definido' }}</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill {{ $color }}" style="width: {{ max($percent, 5) }}%;">
+                                        {{ $item->total }}
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="empty-state">
+                            <span class="empty-icon">📭</span>
+                            <p>Nenhuma função cadastrada</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Por Cidade -->
+            <div class="chart-card">
+                <h3>
+                    <span class="chart-icon">🏙️</span>
+                    Membros por Cidade (Top 10)
+                </h3>
+                <div class="chart-container">
+                    @if($porCidade->count() > 0)
+                        @php
+                            $maxTotal = $porCidade->max('total');
+                            $colors = ['gold', 'green', 'blue', 'purple', 'red', 'orange', 'teal', 'pink'];
+                            $colorIndex = 0;
+                        @endphp
+                        @foreach($porCidade as $item)
+                            @php
+                                $percent = $maxTotal > 0 ? ($item->total / $maxTotal) * 100 : 0;
+                                $color = $colors[$colorIndex % count($colors)];
+                                $colorIndex++;
+                            @endphp
+                            <div class="bar-item">
+                                <span class="bar-label">{{ $item->cidade ?? 'Não definido' }}</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill {{ $color }}" style="width: {{ max($percent, 5) }}%;">
+                                        {{ $item->total }}
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="empty-state">
+                            <span class="empty-icon">📭</span>
+                            <p>Nenhuma cidade cadastrada</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Por Congregação (gráfico maior) -->
+        <div class="chart-card" style="margin-bottom: 25px;">
             <h3>
-                <span class="chart-icon">📌</span>
-                Membros por Função
+                <span class="chart-icon">⛪</span>
+                Membros por Congregação
             </h3>
             <div class="chart-container">
-                @if($porFuncao->count() > 0)
+                @if($porCongregacao->count() > 0)
                     @php
-                        $maxTotal = $porFuncao->max('total');
+                        $maxTotal = $porCongregacao->max('total');
                         $colors = ['gold', 'green', 'blue', 'purple', 'red', 'orange', 'teal', 'pink'];
                         $colorIndex = 0;
                     @endphp
-                    @foreach($porFuncao as $item)
-                        @php
-                            $percent = $maxTotal > 0 ? ($item->total / $maxTotal) * 100 : 0;
-                            $color = $colors[$colorIndex % count($colors)];
-                            $colorIndex++;
-                        @endphp
-                        <div class="bar-item">
-                            <span class="bar-label">{{ $item->funcao ?? 'Não definido' }}</span>
-                            <div class="bar-track">
-                                <div class="bar-fill {{ $color }}" style="width: {{ max($percent, 5) }}%;">
-                                    {{ $item->total }}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        @foreach($porCongregacao as $item)
+                            @php
+                                $percent = $maxTotal > 0 ? ($item->total / $maxTotal) * 100 : 0;
+                                $color = $colors[$colorIndex % count($colors)];
+                                $colorIndex++;
+                            @endphp
+                            <div class="bar-item">
+                                <span class="bar-label">{{ $item->congregacao ?? 'Não definido' }}</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill {{ $color }}" style="width: {{ max($percent, 5) }}%;">
+                                        {{ $item->total }}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
                 @else
                     <div class="empty-state">
                         <span class="empty-icon">📭</span>
-                        <p>Nenhuma função cadastrada</p>
+                        <p>Nenhuma congregação cadastrada</p>
                     </div>
                 @endif
             </div>
         </div>
 
-        <!-- Por Cidade -->
-        <div class="chart-card">
+        <!-- Aniversariantes do Mês -->
+        <div class="aniversariantes-section">
             <h3>
-                <span class="chart-icon">🏙️</span>
-                Membros por Cidade (Top 10)
+                <span>🎂</span>
+                Aniversariantes do Mês
+                <span style="font-size: 0.8rem; color: #999; font-weight: 400; margin-left: 10px;">
+                    {{ now()->format('F') }}
+                </span>
             </h3>
-            <div class="chart-container">
-                @if($porCidade->count() > 0)
-                    @php
-                        $maxTotal = $porCidade->max('total');
-                        $colors = ['gold', 'green', 'blue', 'purple', 'red', 'orange', 'teal', 'pink'];
-                        $colorIndex = 0;
-                    @endphp
-                    @foreach($porCidade as $item)
-                        @php
-                            $percent = $maxTotal > 0 ? ($item->total / $maxTotal) * 100 : 0;
-                            $color = $colors[$colorIndex % count($colors)];
-                            $colorIndex++;
-                        @endphp
-                        <div class="bar-item">
-                            <span class="bar-label">{{ $item->cidade ?? 'Não definido' }}</span>
-                            <div class="bar-track">
-                                <div class="bar-fill {{ $color }}" style="width: {{ max($percent, 5) }}%;">
-                                    {{ $item->total }}
-                                </div>
+            @if($aniversariantes->count() > 0)
+                <div class="aniversariantes-grid">
+                    @foreach($aniversariantes as $aniversariante)
+                        <div class="aniversariante-item">
+                            <div class="avatar">
+                                @php
+                                    $fotoNome = $aniversariante->foto ?? null;
+                                    $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                                    $inicial = substr($aniversariante->nome, 0, 1);
+                                @endphp
+                                
+                                @if($fotoUrl)
+                                    <img src="{{ $fotoUrl }}" 
+                                         alt="{{ $aniversariante->nome }}"
+                                         onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\'avatar-placeholder\'>{{ $inicial }}</span>';">
+                                @else
+                                    <span class="avatar-placeholder">{{ $inicial }}</span>
+                                @endif
                             </div>
-                        </div>
-                    @endforeach
-                @else
-                    <div class="empty-state">
-                        <span class="empty-icon">📭</span>
-                        <p>Nenhuma cidade cadastrada</p>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    <!-- Por Congregação (gráfico maior) -->
-    <div class="chart-card" style="margin-bottom: 25px;">
-        <h3>
-            <span class="chart-icon">⛪</span>
-            Membros por Congregação
-        </h3>
-        <div class="chart-container">
-            @if($porCongregacao->count() > 0)
-                @php
-                    $maxTotal = $porCongregacao->max('total');
-                    $colors = ['gold', 'green', 'blue', 'purple', 'red', 'orange', 'teal', 'pink'];
-                    $colorIndex = 0;
-                @endphp
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    @foreach($porCongregacao as $item)
-                        @php
-                            $percent = $maxTotal > 0 ? ($item->total / $maxTotal) * 100 : 0;
-                            $color = $colors[$colorIndex % count($colors)];
-                            $colorIndex++;
-                        @endphp
-                        <div class="bar-item">
-                            <span class="bar-label">{{ $item->congregacao ?? 'Não definido' }}</span>
-                            <div class="bar-track">
-                                <div class="bar-fill {{ $color }}" style="width: {{ max($percent, 5) }}%;">
-                                    {{ $item->total }}
+                            <div class="info">
+                                <div class="nome">{{ $aniversariante->nome }}</div>
+                                <div class="data">
+                                    🎈 {{ \Carbon\Carbon::parse($aniversariante->dataNascimento)->format('d/m') }}
+                                    @if($aniversariante->funcao)
+                                        <span class="funcao">{{ $aniversariante->funcao }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
                     @endforeach
                 </div>
             @else
-                <div class="empty-state">
-                    <span class="empty-icon">📭</span>
-                    <p>Nenhuma congregação cadastrada</p>
+                <div class="empty-state" style="padding: 20px;">
+                    <span class="empty-icon" style="font-size: 2rem;">🎉</span>
+                    <p>Nenhum aniversariante este mês</p>
                 </div>
             @endif
         </div>
-    </div>
-
-    <!-- Aniversariantes do Mês -->
-    <div class="aniversariantes-section">
-        <h3>
-            <span>🎂</span>
-            Aniversariantes do Mês
-            <span style="font-size: 0.8rem; color: #999; font-weight: 400; margin-left: 10px;">
-                {{ now()->format('F') }}
-            </span>
-        </h3>
-        @if($aniversariantes->count() > 0)
-            <div class="aniversariantes-grid">
-                @foreach($aniversariantes as $aniversariante)
-                    <div class="aniversariante-item">
-                        <div class="avatar">
-                            @if($aniversariante->foto)
-                                <img src="{{ $aniversariante->foto_url }}" alt="{{ $aniversariante->nome }}">
-                            @else
-                                {{ substr($aniversariante->nome, 0, 1) }}
-                            @endif
-                        </div>
-                        <div class="info">
-                            <div class="nome">{{ $aniversariante->nome }}</div>
-                            <div class="data">
-                                🎈 {{ \Carbon\Carbon::parse($aniversariante->dataNascimento)->format('d/m') }}
-                                @if($aniversariante->funcao)
-                                    <span class="funcao">{{ $aniversariante->funcao }}</span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="empty-state" style="padding: 20px;">
-                <span class="empty-icon" style="font-size: 2rem;">🎉</span>
-                <p>Nenhum aniversariante este mês</p>
-            </div>
-        @endif
-    </div>
+    @endif {{-- Fim da verificação de permissão --}}
 </div>
 
 @push('scripts')

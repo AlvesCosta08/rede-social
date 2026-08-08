@@ -67,6 +67,12 @@
         margin-left: 4px;
     }
 
+    .form-group label .optional {
+        color: #999;
+        font-weight: 400;
+        font-size: 0.75rem;
+    }
+
     .form-group input,
     .form-group select,
     .form-group textarea {
@@ -77,6 +83,7 @@
         font-size: 0.9rem;
         background: #faf8f5;
         transition: all 0.3s ease;
+        color: #1a1a2e;
     }
 
     .form-group input:focus,
@@ -86,6 +93,11 @@
         border-color: #c9a84c;
         background: white;
         box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+        color: #bbb;
     }
 
     .form-group .error-text {
@@ -162,6 +174,32 @@
         margin: 5px 0;
     }
 
+    /* ⭐ BADGE DE NÍVEL */
+    .nivel-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .nivel-admin {
+        background: #f44336;
+        color: white;
+    }
+
+    .nivel-secretario {
+        background: #ff9800;
+        color: white;
+    }
+
+    .nivel-usuario {
+        background: #9e9e9e;
+        color: white;
+    }
+
     @media (max-width: 768px) {
         .form-card {
             padding: 20px;
@@ -187,6 +225,14 @@
 @section('content')
 <div class="member-form-container">
     <div class="form-card">
+        {{-- ⭐ VERIFICA PERMISSÃO --}}
+        @if(!auth()->user()?->pode('criar_membro'))
+            <div class="alert-danger">
+                <strong>⛔ Acesso Negado</strong>
+                <p>Você não tem permissão para criar novos membros.</p>
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="alert-danger">
                 <strong>⚠️ Por favor, corrija os seguintes erros:</strong>
@@ -217,7 +263,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="nome_carteira">Nome para Carteira</label>
+                    <label for="nome_carteira">Nome para Carteira <span class="optional">(opcional)</span></label>
                     <input type="text" id="nome_carteira" name="nome_carteira" value="{{ old('nome_carteira') }}" placeholder="Nome como deve aparecer na carteira">
                     @error('nome_carteira')
                         <div class="error-text">{{ $message }}</div>
@@ -275,7 +321,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="dataBatismo">Data do Batismo</label>
+                        <label for="dataBatismo">Data do Batismo <span class="optional">(opcional)</span></label>
                         <input type="date" id="dataBatismo" name="dataBatismo" value="{{ old('dataBatismo') }}">
                         @error('dataBatismo')
                             <div class="error-text">{{ $message }}</div>
@@ -285,7 +331,7 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="mae">Nome da Mãe</label>
+                        <label for="mae">Nome da Mãe <span class="optional">(opcional)</span></label>
                         <input type="text" id="mae" name="mae" value="{{ old('mae') }}" placeholder="Nome completo da mãe">
                         @error('mae')
                             <div class="error-text">{{ $message }}</div>
@@ -293,7 +339,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="pai">Nome do Pai</label>
+                        <label for="pai">Nome do Pai <span class="optional">(opcional)</span></label>
                         <input type="text" id="pai" name="pai" value="{{ old('pai') }}" placeholder="Nome completo do pai">
                         @error('pai')
                             <div class="error-text">{{ $message }}</div>
@@ -404,8 +450,9 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="data_Consagracao">Data da Consagração</label>
+                        <label for="data_Consagracao">Data da Consagração <span class="optional">(opcional)</span></label>
                         <input type="date" id="data_Consagracao" name="data_Consagracao" value="{{ old('data_Consagracao') }}">
+                        <div class="help-text">Obrigatória para cargos ministeriais</div>
                         @error('data_Consagracao')
                             <div class="error-text">{{ $message }}</div>
                         @enderror
@@ -416,7 +463,7 @@
                         <select id="status" name="status" required>
                             <option value="">Selecione</option>
                             @foreach($statusList as $status)
-                                <option value="{{ $status }}" {{ old('status') == $status ? 'selected' : '' }}>{{ $status }}</option>
+                                <option value="{{ $status }}" {{ old('status') == $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
                             @endforeach
                         </select>
                         @error('status')
@@ -424,6 +471,29 @@
                         @enderror
                     </div>
                 </div>
+
+                {{-- ⭐ CAMPO NÍVEL - APENAS ADMIN PODE DEFINIR --}}
+                @if(auth()->user()?->isAdmin())
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nivel">Nível de Permissão</label>
+                            <select id="nivel" name="nivel">
+                                <option value="usuario" {{ old('nivel') == 'usuario' ? 'selected' : '' }}>👤 Usuário</option>
+                                <option value="secretario" {{ old('nivel') == 'secretario' ? 'selected' : '' }}>📋 Secretário</option>
+                                <option value="admin" {{ old('nivel') == 'admin' ? 'selected' : '' }}>👑 Administrador</option>
+                            </select>
+                            <div class="help-text">
+                                <strong>Usuário:</strong> Apenas perfil próprio<br>
+                                <strong>Secretário:</strong> Gerencia membros da congregação<br>
+                                <strong>Administrador:</strong> Acesso total ao sistema
+                            </div>
+                            @error('nivel')
+                                <div class="error-text">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="form-group"></div>
+                    </div>
+                @endif
             </div>
 
             <!-- Biografia e Senha -->
@@ -434,7 +504,7 @@
                 </h3>
 
                 <div class="form-group">
-                    <label for="bio">Biografia/Notas</label>
+                    <label for="bio">Biografia/Notas <span class="optional">(opcional)</span></label>
                     <textarea id="bio" name="bio" rows="3" placeholder="Informações adicionais sobre o membro...">{{ old('bio') }}</textarea>
                     <div class="help-text">Máximo de 500 caracteres</div>
                     @error('bio')
@@ -460,9 +530,11 @@
 
             <!-- Actions -->
             <div class="form-actions">
-                <button type="submit" class="btn-admin btn-admin-primary">
-                    <span>💾</span> Cadastrar Membro
-                </button>
+                @if(auth()->user()?->pode('criar_membro'))
+                    <button type="submit" class="btn-admin btn-admin-primary">
+                        <span>💾</span> Cadastrar Membro
+                    </button>
+                @endif
                 <a href="{{ route('admin.membros.index') }}" class="btn-admin btn-admin-secondary">
                     <span>🔙</span> Cancelar
                 </a>
@@ -509,6 +581,26 @@
         }
         e.target.value = value;
     });
+
+    // ⭐ VALIDAR CONSAGRAÇÃO (se função exigir)
+    document.querySelector('select[name="funcao"]')?.addEventListener('change', function() {
+        const funcoesConsagracao = ['Pastor-Presidente', 'Pastor-Vice-Presidente', 'Pastor', 'Evangelista', 'Presbitero', 'Diacono', 'Auxiliar'];
+        const dataConsagracao = document.querySelector('input[name="data_Consagracao"]');
+        
+        if (funcoesConsagracao.includes(this.value)) {
+            dataConsagracao.required = true;
+            dataConsagracao.closest('.form-group').querySelector('.help-text').textContent = '⚠️ Obrigatória para o cargo selecionado';
+            dataConsagracao.closest('.form-group').querySelector('.help-text').style.color = '#f44336';
+        } else {
+            dataConsagracao.required = false;
+            dataConsagracao.closest('.form-group').querySelector('.help-text').textContent = 'Obrigatória para cargos ministeriais';
+            dataConsagracao.closest('.form-group').querySelector('.help-text').style.color = '#999';
+        }
+    });
+
+    @if(auth()->user()?->isAdmin())
+        console.log('👑 Usuário ADMIN - campo Nível disponível');
+    @endif
 </script>
 @endpush
 @endsection

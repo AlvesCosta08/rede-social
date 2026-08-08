@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Antigo\FiliadoAntigo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -66,43 +65,19 @@ class LoginController extends Controller
             $matricula = $request->matricula;
             $password = $request->password;
 
-            // 🔍 PASSO 1: Buscar no banco novo
+            // 🔍 Buscar no banco novo
             $user = User::where('matricula', $matricula)->first();
 
-            // 🔍 PASSO 2: Se não existe, buscar no banco antigo
             if (!$user) {
-                Log::channel('auth')->info('🔍 BUSCANDO NO BANCO ANTIGO', [
+                Log::channel('auth')->warning('⚠️ MATRÍCULA NÃO ENCONTRADA', [
                     'matricula' => $matricula,
                     'ip' => $request->ip()
                 ]);
 
-                $userAntigo = FiliadoAntigo::on('sistema_antigo')
-                                ->where('matricula', $matricula)
-                                ->first();
-
-                if ($userAntigo) {
-                    Log::channel('auth')->info('📝 CRIANDO USUÁRIO A PARTIR DO BANCO ANTIGO', [
-                        'matricula' => $matricula,
-                        'nome' => $userAntigo->nome,
-                        'ip' => $request->ip()
-                    ]);
-
-                    $user = $this->migrarUsuarioAntigo($userAntigo, $password);
-
-                    if (!$user) {
-                        return back()->with('error', 'Erro ao migrar seus dados. Contate a secretaria.');
-                    }
-                } else {
-                    Log::channel('auth')->warning('⚠️ MATRÍCULA NÃO ENCONTRADA EM NENHUM BANCO', [
-                        'matricula' => $matricula,
-                        'ip' => $request->ip()
-                    ]);
-
-                    return back()->with('error', 'Matrícula não encontrada. Contate a secretaria.');
-                }
+                return back()->with('error', 'Matrícula não encontrada. Contate a secretaria.');
             }
 
-            // 🔐 PASSO 3: Verificar senha
+            // 🔐 VERIFICAR SENHA
             if (!Hash::check($password, $user->password)) {
                 Log::channel('auth')->warning('⚠️ SENHA INCORRETA', [
                     'matricula' => $matricula,
@@ -114,7 +89,7 @@ class LoginController extends Controller
                 ]);
             }
 
-            // 🔐 PASSO 4: Verificar status
+            // 🔐 VERIFICAR STATUS
             if (!in_array(strtolower($user->status), ['ativo', 'membro'])) {
                 Log::channel('auth')->warning('⚠️ CONTA INATIVA', [
                     'matricula' => $matricula,
@@ -125,17 +100,36 @@ class LoginController extends Controller
                 return back()->with('error', "Sua conta está {$user->status}. Contate a secretaria.");
             }
 
-            // ✅ PASSO 5: Fazer login com Laravel Auth
+            // ⭐ VERIFICAR SE O USUÁRIO TEM UM NÍVEL DEFINIDO
+            if (empty($user->nivel)) {
+                // Se for admin pelo campo antigo, define como admin
+                if ($user->admin === true || $user->admin === 1) {
+                    $user->nivel = User::NIVEL_ADMIN;
+                } else {
+                    // Por padrão, usuário comum
+                    $user->nivel = User::NIVEL_USUARIO;
+                }
+                $user->save();
+                
+                Log::channel('auth')->info('🔄 NÍVEL DEFINIDO AUTOMATICAMENTE', [
+                    'matricula' => $user->matricula,
+                    'nivel' => $user->nivel,
+                    'ip' => $request->ip()
+                ]);
+            }
+
+            // ✅ FAZER LOGIN COM LARAVEL AUTH
             Auth::login($user, $request->has('remember'));
 
-            // ✅ PASSO 6: Manter compatibilidade com código existente
+            // ✅ MANTER COMPATIBILIDADE COM CÓDIGO EXISTENTE
             session([
                 'membro_logado' => $user->matricula,
                 'membro_nome' => $user->nome,
                 'membro_funcao' => $user->funcao,
+                'membro_nivel' => $user->nivel,
             ]);
 
-            // ✅ PASSO 7: Regenerar sessão por segurança
+            // ✅ REGENERAR SESSÃO POR SEGURANÇA
             $request->session()->regenerate();
 
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
@@ -144,12 +138,23 @@ class LoginController extends Controller
                 'matricula' => $user->matricula,
                 'nome' => $user->nome,
                 'funcao' => $user->funcao,
+                'nivel' => $user->nivel,
                 'execution_time_ms' => $executionTime,
                 'ip' => $request->ip()
             ]);
 
+            // ⭐ REDIRECIONA PARA O FEED COM MENSAGEM PERSONALIZADA
+            $mensagem = "Bem-vindo(a) {$user->nome}!";
+            
+            // Adiciona mensagem especial para admins
+            if ($user->isAdmin()) {
+                $mensagem .= " 👑 Você tem acesso administrativo completo.";
+            } elseif ($user->isSecretario()) {
+                $mensagem .= " 📋 Você tem permissões de secretário.";
+            }
+
             return redirect()->intended(route('feed.index'))
-                ->with('success', "Bem-vindo(a) {$user->nome}!");
+                ->with('success', $mensagem);
 
         } catch (ValidationException $e) {
             throw $e;
@@ -170,57 +175,6 @@ class LoginController extends Controller
     }
 
     /**
-     * Migrar usuário do banco antigo
-     */
-    private function migrarUsuarioAntigo($userAntigo, $password)
-    {
-        try {
-            $dados = [
-                'matricula' => $userAntigo->matricula,
-                'nome' => $userAntigo->nome ?? 'Usuário',
-                'nome_carteira' => $userAntigo->nome_carteira ?? $userAntigo->nome ?? null,
-                'password' => Hash::make($password),
-                'funcao' => $userAntigo->funcao ?? 'Membro',
-                'status' => 'ativo',
-                'admin' => 0,
-                'cidade' => $userAntigo->cidade ?? null,
-                'uf' => $userAntigo->uf ?? null,
-                'endereco' => $userAntigo->endereco ?? null,
-                'bairro' => $userAntigo->bairro ?? null,
-                'email' => $userAntigo->email ?? null,
-                'telefone' => $userAntigo->telefone ?? null,
-                'documento' => $userAntigo->documento ?? null,
-                'dataNascimento' => $userAntigo->dataNascimento ?? null,
-                'dataBatismo' => $userAntigo->dataBatismo ?? null,
-                'data_Consagracao' => $userAntigo->data_Consagracao ?? null,
-                'congregacao' => $userAntigo->congregacao ?? null,
-                'datCadastro' => $userAntigo->datCadastro ?? now(),
-                'created_at' => $userAntigo->datCadastro ?? now(),
-                'updated_at' => now(),
-            ];
-
-            // Verifica se já existe (evita duplicidade)
-            $existing = User::where('matricula', $userAntigo->matricula)->first();
-
-            if ($existing) {
-                $existing->update($dados);
-                return $existing;
-            }
-
-            return User::create($dados);
-
-        } catch (\Exception $e) {
-            Log::channel('auth')->error('❌ ERRO AO MIGRAR USUÁRIO', [
-                'matricula' => $userAntigo->matricula,
-                'error' => $e->getMessage(),
-                'ip' => request()->ip()
-            ]);
-
-            return null;
-        }
-    }
-
-    /**
      * Logout
      */
     public function logout(Request $request)
@@ -230,6 +184,7 @@ class LoginController extends Controller
         Log::channel('auth')->info('🚪 REALIZANDO LOGOUT', [
             'matricula' => $user?->matricula,
             'nome' => $user?->nome,
+            'nivel' => $user?->nivel,
             'ip' => $request->ip()
         ]);
 

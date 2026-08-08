@@ -325,309 +325,320 @@
 @section('content')
 <div class="edit-profile-container">
     <div class="edit-profile-card">
-        <form method="POST" action="{{ route('perfil.update') }}" id="editForm">
-            @csrf
-            @method('PUT')
-
-            <!-- ===== FOTO DE PERFIL ===== -->
-            <div class="section-title">
-                <i class="fas fa-user-circle"></i>
-                <span>Foto de Perfil</span>
+        @if(!auth()->user() || auth()->user()->matricula != $perfil->matricula)
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                Você não tem permissão para editar este perfil.
             </div>
+            <a href="{{ route('perfil.show', $perfil->matricula) }}" class="btn-cancel">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        @else
+            <form method="POST" action="{{ route('perfil.update') }}" id="editForm">
+                @csrf
+                @method('PUT')
 
-            <div class="avatar-upload-wrapper">
-                <div class="avatar-preview" id="avatarPreview">
-                    @php
-                        $fotoNome = $perfil->foto ?? null;
-                        $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
-                    @endphp
-                    
-                    @if($fotoUrl)
-                        <img src="{{ $fotoUrl }}" 
-                             alt="Foto de {{ $perfil->nome }}" 
-                             id="fotoPreview"
-                             onerror="this.style.display='none'; document.getElementById('placeholderPreview').style.display='flex';">
-                        <span class="placeholder" id="placeholderPreview" style="display: none;">{{ substr($perfil->nome, 0, 1) }}</span>
-                    @else
-                        <span class="placeholder" id="placeholderPreview">{{ substr($perfil->nome, 0, 1) }}</span>
-                    @endif
+                <!-- ===== FOTO DE PERFIL ===== -->
+                <div class="section-title">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Foto de Perfil</span>
                 </div>
 
-                <div class="avatar-actions">
-                    <button type="button" class="btn-upload" id="btnUpload">
-                        <i class="fas fa-camera"></i> Trocar Foto
-                        <input type="file" id="inputFoto" accept="image/*">
-                    </button>
-                    <button type="button" class="btn-remove" id="btnRemoverFoto">
-                        <i class="fas fa-trash-alt"></i> Remover Foto
-                    </button>
-                    <div class="avatar-info">
-                        <i class="fas fa-info-circle"></i> Formatos: JPG, PNG, GIF, WEBP • Máx: 2MB
+                <div class="avatar-upload-wrapper">
+                    <div class="avatar-preview" id="avatarPreview">
+                        @php
+                            $fotoNome = $perfil->foto ?? null;
+                            $fotoUrl = $fotoNome ? route('imagem.foto', ['filename' => $fotoNome]) : null;
+                            $inicial = substr($perfil->nome, 0, 1);
+                        @endphp
+                        
+                        @if($fotoUrl)
+                            <img src="{{ $fotoUrl }}" 
+                                 alt="Foto de {{ $perfil->nome }}" 
+                                 id="fotoPreview"
+                                 onerror="this.style.display='none'; document.getElementById('placeholderPreview').style.display='flex';">
+                            <span class="placeholder" id="placeholderPreview" style="display: none;">{{ $inicial }}</span>
+                        @else
+                            <span class="placeholder" id="placeholderPreview">{{ $inicial }}</span>
+                        @endif
+                    </div>
+
+                    <div class="avatar-actions">
+                        <button type="button" class="btn-upload" id="btnUpload">
+                            <i class="fas fa-camera"></i> Trocar Foto
+                            <input type="file" id="inputFoto" accept="image/*">
+                        </button>
+                        <button type="button" class="btn-remove" id="btnRemoverFoto">
+                            <i class="fas fa-trash-alt"></i> Remover Foto
+                        </button>
+                        <div class="avatar-info">
+                            <i class="fas fa-info-circle"></i> Formatos: JPG, PNG, GIF, WEBP • Máx: 2MB
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- ===== DADOS PESSOAIS ===== -->
-            <div class="section-title">
-                <i class="fas fa-user"></i>
-                <span>Dados Pessoais</span>
-            </div>
+                <!-- ===== DADOS PESSOAIS ===== -->
+                <div class="section-title">
+                    <i class="fas fa-user"></i>
+                    <span>Dados Pessoais</span>
+                </div>
 
-            <div class="form-row">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo <span class="required">*</span></label>
+                        <input type="text" name="nome" class="form-control @error('nome') error @enderror" 
+                               value="{{ old('nome', $perfil->nome) }}" required>
+                        @error('nome') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Nome para Carteira</label>
+                        <input type="text" name="nome_carteira" class="form-control @error('nome_carteira') error @enderror" 
+                               value="{{ old('nome_carteira', $perfil->nome_carteira) }}">
+                        <span class="help-text">Como aparecerá na carteira digital</span>
+                        @error('nome_carteira') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email <span class="required">*</span></label>
+                        <input type="email" name="email" class="form-control @error('email') error @enderror" 
+                               value="{{ old('email', $perfil->email) }}" required>
+                        @error('email') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone <span class="required">*</span></label>
+                        <input type="text" name="telefone" class="form-control @error('telefone') error @enderror" 
+                               value="{{ old('telefone', $perfil->telefone) }}" required>
+                        @error('telefone') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telefone 2 (WhatsApp)</label>
+                        <input type="text" name="telefone2" class="form-control @error('telefone2') error @enderror" 
+                               value="{{ old('telefone2', $perfil->telefone2 ?? '') }}">
+                        <span class="help-text">Número para contato secundário</span>
+                        @error('telefone2') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Documento (CPF) <span class="required">*</span></label>
+                        <input type="text" name="documento" class="form-control @error('documento') error @enderror" 
+                               value="{{ old('documento', $perfil->documento) }}" required>
+                        @error('documento') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data de Nascimento <span class="required">*</span></label>
+                        <input type="date" name="dataNascimento" class="form-control @error('dataNascimento') error @enderror" 
+                               value="{{ old('dataNascimento', $perfil->dataNascimento ? date('Y-m-d', strtotime($perfil->dataNascimento)) : '') }}" required>
+                        @error('dataNascimento') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Estado Civil</label>
+                        <select name="estadoCivil" class="form-control @error('estadoCivil') error @enderror">
+                            <option value="">Selecione...</option>
+                            <option value="Solteiro(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Solteiro(a)' ? 'selected' : '' }}>Solteiro(a)</option>
+                            <option value="Casado(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Casado(a)' ? 'selected' : '' }}>Casado(a)</option>
+                            <option value="Divorciado(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Divorciado(a)' ? 'selected' : '' }}>Divorciado(a)</option>
+                            <option value="Viúvo(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Viúvo(a)' ? 'selected' : '' }}>Viúvo(a)</option>
+                            <option value="União Estável" {{ old('estadoCivil', $perfil->estadoCivil) == 'União Estável' ? 'selected' : '' }}>União Estável</option>
+                        </select>
+                        @error('estadoCivil') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome da Mãe</label>
+                        <input type="text" name="mae" class="form-control @error('mae') error @enderror" 
+                               value="{{ old('mae', $perfil->mae) }}">
+                        @error('mae') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Nome do Pai</label>
+                        <input type="text" name="pai" class="form-control @error('pai') error @enderror" 
+                               value="{{ old('pai', $perfil->pai) }}">
+                        @error('pai') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>Nome Completo <span class="required">*</span></label>
-                    <input type="text" name="nome" class="form-control @error('nome') error @enderror" 
-                           value="{{ old('nome', $perfil->nome) }}" required>
-                    @error('nome') <span class="error-text">{{ $message }}</span> @enderror
+                    <label>Biografia</label>
+                    <textarea name="bio" class="form-control @error('bio') error @enderror" rows="3" maxlength="500">{{ old('bio', $perfil->bio) }}</textarea>
+                    <span class="help-text">Máximo 500 caracteres - Conte um pouco sobre você</span>
+                    @error('bio') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
+
+                <!-- ===== ENDEREÇO ===== -->
+                <div class="section-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Endereço</span>
+                </div>
+
                 <div class="form-group">
-                    <label>Nome para Carteira</label>
-                    <input type="text" name="nome_carteira" class="form-control @error('nome_carteira') error @enderror" 
-                           value="{{ old('nome_carteira', $perfil->nome_carteira) }}">
-                    <span class="help-text">Como aparecerá na carteira digital</span>
-                    @error('nome_carteira') <span class="error-text">{{ $message }}</span> @enderror
+                    <label>Logradouro</label>
+                    <input type="text" name="logradouro" class="form-control @error('logradouro') error @enderror" 
+                           value="{{ old('logradouro', $perfil->logradouro) }}">
+                    <span class="help-text">Rua, Avenida, etc.</span>
+                    @error('logradouro') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
-            </div>
 
-            <div class="form-row">
                 <div class="form-group">
-                    <label>Email <span class="required">*</span></label>
-                    <input type="email" name="email" class="form-control @error('email') error @enderror" 
-                           value="{{ old('email', $perfil->email) }}" required>
-                    @error('email') <span class="error-text">{{ $message }}</span> @enderror
+                    <label>Endereço <span class="required">*</span></label>
+                    <input type="text" name="endereco" class="form-control @error('endereco') error @enderror" 
+                           value="{{ old('endereco', $perfil->endereco) }}" required>
+                    @error('endereco') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Número <span class="required">*</span></label>
+                        <input type="number" name="numero" class="form-control @error('numero') error @enderror" 
+                               value="{{ old('numero', $perfil->numero) }}" required>
+                        @error('numero') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Bairro <span class="required">*</span></label>
+                        <input type="text" name="bairro" class="form-control @error('bairro') error @enderror" 
+                               value="{{ old('bairro', $perfil->bairro) }}" required>
+                        @error('bairro') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>CEP <span class="required">*</span></label>
+                        <input type="text" name="cep" class="form-control @error('cep') error @enderror" 
+                               value="{{ old('cep', $perfil->cep) }}" required>
+                        @error('cep') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cidade <span class="required">*</span></label>
+                        <input type="text" name="cidade" class="form-control @error('cidade') error @enderror" 
+                               value="{{ old('cidade', $perfil->cidade) }}" required>
+                        @error('cidade') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>UF <span class="required">*</span></label>
+                        <select name="uf" class="form-control @error('uf') error @enderror" required>
+                            <option value="">Selecione</option>
+                            @php
+                                $ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+                            @endphp
+                            @foreach($ufs as $uf)
+                                <option value="{{ $uf }}" {{ old('uf', $perfil->uf) == $uf ? 'selected' : '' }}>{{ $uf }}</option>
+                            @endforeach
+                        </select>
+                        @error('uf') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <!-- ===== DADOS DA IGREJA ===== -->
+                <div class="section-title">
+                    <i class="fas fa-church"></i>
+                    <span>Dados Ministeriais</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Congregação <span class="required">*</span></label>
+                        <input type="text" name="congregacao" class="form-control @error('congregacao') error @enderror" 
+                               value="{{ old('congregacao', $perfil->congregacao) }}" required>
+                        @error('congregacao') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Função <span class="required">*</span></label>
+                        <select name="funcao" class="form-control @error('funcao') error @enderror" required>
+                            <option value="Membro" {{ old('funcao', $perfil->funcao) == 'Membro' ? 'selected' : '' }}>Membro</option>
+                            <option value="Auxiliar" {{ old('funcao', $perfil->funcao) == 'Auxiliar' ? 'selected' : '' }}>Auxiliar</option>
+                            <option value="Diacono" {{ old('funcao', $perfil->funcao) == 'Diacono' ? 'selected' : '' }}>Diácono</option>
+                            <option value="Presbitero" {{ old('funcao', $perfil->funcao) == 'Presbitero' ? 'selected' : '' }}>Presbítero</option>
+                            <option value="Evangelista" {{ old('funcao', $perfil->funcao) == 'Evangelista' ? 'selected' : '' }}>Evangelista</option>
+                            <option value="Pastor" {{ old('funcao', $perfil->funcao) == 'Pastor' ? 'selected' : '' }}>Pastor</option>
+                            <option value="Pastor-Presidente" {{ old('funcao', $perfil->funcao) == 'Pastor-Presidente' ? 'selected' : '' }}>Pastor Presidente</option>
+                            <option value="Vice-Presidente" {{ old('funcao', $perfil->funcao) == 'Vice-Presidente' ? 'selected' : '' }}>Vice Presidente</option>
+                        </select>
+                        @error('funcao') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data de Batismo</label>
+                        <input type="date" name="dataBatismo" class="form-control @error('dataBatismo') error @enderror" 
+                               value="{{ old('dataBatismo', $perfil->dataBatismo ? date('Y-m-d', strtotime($perfil->dataBatismo)) : '') }}">
+                        @error('dataBatismo') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group" id="consagracaoGroup" style="{{ in_array(old('funcao', $perfil->funcao), ['Auxiliar','Diacono','Presbitero','Evangelista','Pastor','Pastor-Presidente','Vice-Presidente']) ? '' : 'display:none;' }}">
+                        <label>Data de Consagração</label>
+                        <input type="date" name="data_Consagracao" class="form-control @error('data_Consagracao') error @enderror" 
+                               value="{{ old('data_Consagracao', $perfil->data_Consagracao ? date('Y-m-d', strtotime($perfil->data_Consagracao)) : '') }}">
+                        <span class="help-text">Obrigatória para cargos ministeriais</span>
+                        @error('data_Consagracao') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <!-- ===== SENHA ===== -->
+                <div class="section-title">
+                    <i class="fas fa-lock"></i>
+                    <span>Alterar Senha</span>
+                </div>
+
                 <div class="form-group">
-                    <label>Telefone <span class="required">*</span></label>
-                    <input type="text" name="telefone" class="form-control @error('telefone') error @enderror" 
-                           value="{{ old('telefone', $perfil->telefone) }}" required>
-                    @error('telefone') <span class="error-text">{{ $message }}</span> @enderror
+                    <span class="help-text">Preencha apenas se quiser alterar sua senha</span>
                 </div>
-            </div>
 
-            <div class="form-row">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Senha Atual</label>
+                        <input type="password" name="current_password" class="form-control @error('current_password') error @enderror" 
+                               placeholder="Digite sua senha atual">
+                        @error('current_password') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Nova Senha</label>
+                        <input type="password" name="new_password" class="form-control @error('new_password') error @enderror" 
+                               placeholder="Digite a nova senha (mínimo 8 caracteres)">
+                        @error('new_password') <span class="error-text">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>Telefone 2 (WhatsApp)</label>
-                    <input type="text" name="telefone2" class="form-control @error('telefone2') error @enderror" 
-                           value="{{ old('telefone2', $perfil->telefone2 ?? '') }}">
-                    <span class="help-text">Número para contato secundário</span>
-                    @error('telefone2') <span class="error-text">{{ $message }}</span> @enderror
+                    <label>Confirmar Nova Senha</label>
+                    <input type="password" name="new_password_confirmation" class="form-control" 
+                           placeholder="Confirme a nova senha">
                 </div>
+
+                <!-- ===== PRIVACIDADE ===== -->
+                <div class="section-title">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Privacidade</span>
+                </div>
+
                 <div class="form-group">
-                    <label>Documento (CPF) <span class="required">*</span></label>
-                    <input type="text" name="documento" class="form-control @error('documento') error @enderror" 
-                           value="{{ old('documento', $perfil->documento) }}" required>
-                    @error('documento') <span class="error-text">{{ $message }}</span> @enderror
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 400;">
+                        <input type="checkbox" name="privacidade" value="1" 
+                               {{ old('privacidade', $perfil->privacidade) ? 'checked' : '' }}>
+                        <span>Perfil privado (apenas membros podem ver)</span>
+                    </label>
+                    <span class="help-text">Desmarque para tornar seu perfil visível para todos</span>
                 </div>
-            </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Data de Nascimento <span class="required">*</span></label>
-                    <input type="date" name="dataNascimento" class="form-control @error('dataNascimento') error @enderror" 
-                           value="{{ old('dataNascimento', $perfil->dataNascimento ? date('Y-m-d', strtotime($perfil->dataNascimento)) : '') }}" required>
-                    @error('dataNascimento') <span class="error-text">{{ $message }}</span> @enderror
+                <!-- ===== BOTÕES ===== -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit" id="btnSubmit">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                    <a href="{{ route('perfil.show', $perfil->matricula) }}" class="btn-cancel">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
                 </div>
-                <div class="form-group">
-                    <label>Estado Civil</label>
-                    <select name="estadoCivil" class="form-control @error('estadoCivil') error @enderror">
-                        <option value="">Selecione...</option>
-                        <option value="Solteiro(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Solteiro(a)' ? 'selected' : '' }}>Solteiro(a)</option>
-                        <option value="Casado(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Casado(a)' ? 'selected' : '' }}>Casado(a)</option>
-                        <option value="Divorciado(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Divorciado(a)' ? 'selected' : '' }}>Divorciado(a)</option>
-                        <option value="Viúvo(a)" {{ old('estadoCivil', $perfil->estadoCivil) == 'Viúvo(a)' ? 'selected' : '' }}>Viúvo(a)</option>
-                        <option value="União Estável" {{ old('estadoCivil', $perfil->estadoCivil) == 'União Estável' ? 'selected' : '' }}>União Estável</option>
-                    </select>
-                    @error('estadoCivil') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Nome da Mãe</label>
-                    <input type="text" name="mae" class="form-control @error('mae') error @enderror" 
-                           value="{{ old('mae', $perfil->mae) }}">
-                    @error('mae') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>Nome do Pai</label>
-                    <input type="text" name="pai" class="form-control @error('pai') error @enderror" 
-                           value="{{ old('pai', $perfil->pai) }}">
-                    @error('pai') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Biografia</label>
-                <textarea name="bio" class="form-control @error('bio') error @enderror" rows="3" maxlength="500">{{ old('bio', $perfil->bio) }}</textarea>
-                <span class="help-text">Máximo 500 caracteres - Conte um pouco sobre você</span>
-                @error('bio') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- ===== ENDEREÇO ===== -->
-            <div class="section-title">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>Endereço</span>
-            </div>
-
-            <div class="form-group">
-                <label>Logradouro</label>
-                <input type="text" name="logradouro" class="form-control @error('logradouro') error @enderror" 
-                       value="{{ old('logradouro', $perfil->logradouro) }}">
-                <span class="help-text">Rua, Avenida, etc.</span>
-                @error('logradouro') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
-
-            <div class="form-group">
-                <label>Endereço <span class="required">*</span></label>
-                <input type="text" name="endereco" class="form-control @error('endereco') error @enderror" 
-                       value="{{ old('endereco', $perfil->endereco) }}" required>
-                @error('endereco') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
-
-            <div class="form-row-3">
-                <div class="form-group">
-                    <label>Número <span class="required">*</span></label>
-                    <input type="number" name="numero" class="form-control @error('numero') error @enderror" 
-                           value="{{ old('numero', $perfil->numero) }}" required>
-                    @error('numero') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>Bairro <span class="required">*</span></label>
-                    <input type="text" name="bairro" class="form-control @error('bairro') error @enderror" 
-                           value="{{ old('bairro', $perfil->bairro) }}" required>
-                    @error('bairro') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>CEP <span class="required">*</span></label>
-                    <input type="text" name="cep" class="form-control @error('cep') error @enderror" 
-                           value="{{ old('cep', $perfil->cep) }}" required>
-                    @error('cep') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Cidade <span class="required">*</span></label>
-                    <input type="text" name="cidade" class="form-control @error('cidade') error @enderror" 
-                           value="{{ old('cidade', $perfil->cidade) }}" required>
-                    @error('cidade') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>UF <span class="required">*</span></label>
-                    <select name="uf" class="form-control @error('uf') error @enderror" required>
-                        <option value="">Selecione</option>
-                        @php
-                            $ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-                        @endphp
-                        @foreach($ufs as $uf)
-                            <option value="{{ $uf }}" {{ old('uf', $perfil->uf) == $uf ? 'selected' : '' }}>{{ $uf }}</option>
-                        @endforeach
-                    </select>
-                    @error('uf') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <!-- ===== DADOS DA IGREJA ===== -->
-            <div class="section-title">
-                <i class="fas fa-church"></i>
-                <span>Dados Ministeriais</span>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Congregação <span class="required">*</span></label>
-                    <input type="text" name="congregacao" class="form-control @error('congregacao') error @enderror" 
-                           value="{{ old('congregacao', $perfil->congregacao) }}" required>
-                    @error('congregacao') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>Função <span class="required">*</span></label>
-                    <select name="funcao" class="form-control @error('funcao') error @enderror" required>
-                        <option value="Membro" {{ old('funcao', $perfil->funcao) == 'Membro' ? 'selected' : '' }}>Membro</option>
-                        <option value="Auxiliar" {{ old('funcao', $perfil->funcao) == 'Auxiliar' ? 'selected' : '' }}>Auxiliar</option>
-                        <option value="Diacono" {{ old('funcao', $perfil->funcao) == 'Diacono' ? 'selected' : '' }}>Diácono</option>
-                        <option value="Presbitero" {{ old('funcao', $perfil->funcao) == 'Presbitero' ? 'selected' : '' }}>Presbítero</option>
-                        <option value="Evangelista" {{ old('funcao', $perfil->funcao) == 'Evangelista' ? 'selected' : '' }}>Evangelista</option>
-                        <option value="Pastor" {{ old('funcao', $perfil->funcao) == 'Pastor' ? 'selected' : '' }}>Pastor</option>
-                        <option value="Pastor-Presidente" {{ old('funcao', $perfil->funcao) == 'Pastor-Presidente' ? 'selected' : '' }}>Pastor Presidente</option>
-                        <option value="Vice-Presidente" {{ old('funcao', $perfil->funcao) == 'Vice-Presidente' ? 'selected' : '' }}>Vice Presidente</option>
-                    </select>
-                    @error('funcao') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Data de Batismo</label>
-                    <input type="date" name="dataBatismo" class="form-control @error('dataBatismo') error @enderror" 
-                           value="{{ old('dataBatismo', $perfil->dataBatismo ? date('Y-m-d', strtotime($perfil->dataBatismo)) : '') }}">
-                    @error('dataBatismo') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group" id="consagracaoGroup" style="{{ in_array(old('funcao', $perfil->funcao), ['Auxiliar','Diacono','Presbitero','Evangelista','Pastor','Pastor-Presidente','Vice-Presidente']) ? '' : 'display:none;' }}">
-                    <label>Data de Consagração</label>
-                    <input type="date" name="data_Consagracao" class="form-control @error('data_Consagracao') error @enderror" 
-                           value="{{ old('data_Consagracao', $perfil->data_Consagracao ? date('Y-m-d', strtotime($perfil->data_Consagracao)) : '') }}">
-                    <span class="help-text">Obrigatória para cargos ministeriais</span>
-                    @error('data_Consagracao') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <!-- ===== SENHA ===== -->
-            <div class="section-title">
-                <i class="fas fa-lock"></i>
-                <span>Alterar Senha</span>
-            </div>
-
-            <div class="form-group">
-                <span class="help-text">Preencha apenas se quiser alterar sua senha</span>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Senha Atual</label>
-                    <input type="password" name="current_password" class="form-control @error('current_password') error @enderror" 
-                           placeholder="Digite sua senha atual">
-                    @error('current_password') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>Nova Senha</label>
-                    <input type="password" name="new_password" class="form-control @error('new_password') error @enderror" 
-                           placeholder="Digite a nova senha (mínimo 8 caracteres)">
-                    @error('new_password') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Confirmar Nova Senha</label>
-                <input type="password" name="new_password_confirmation" class="form-control" 
-                       placeholder="Confirme a nova senha">
-            </div>
-
-            <!-- ===== PRIVACIDADE ===== -->
-            <div class="section-title">
-                <i class="fas fa-shield-alt"></i>
-                <span>Privacidade</span>
-            </div>
-
-            <div class="form-group">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 400;">
-                    <input type="checkbox" name="privacidade" value="1" 
-                           {{ old('privacidade', $perfil->privacidade) ? 'checked' : '' }}>
-                    <span>Perfil privado (apenas membros podem ver)</span>
-                </label>
-                <span class="help-text">Desmarque para tornar seu perfil visível para todos</span>
-            </div>
-
-            <!-- ===== BOTÕES ===== -->
-            <div class="form-actions">
-                <button type="submit" class="btn-submit" id="btnSubmit">
-                    <i class="fas fa-save"></i> Salvar Alterações
-                </button>
-                <a href="{{ route('perfil.show', $perfil->matricula) }}" class="btn-cancel">
-                    <i class="fas fa-times"></i> Cancelar
-                </a>
-            </div>
-        </form>
+            </form>
+        @endif
     </div>
 </div>
 
@@ -640,7 +651,6 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ===== FUNÇÃO PARA MOSTRAR TOAST =====
     function mostrarToast(message, type = 'success') {
         const toast = document.getElementById('toastEdit');
         const messageEl = document.getElementById('toastMessage');
@@ -663,9 +673,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
 
-    // ============================================================
-    // ⭐ UPLOAD DE FOTO
-    // ============================================================
     const inputFoto = document.getElementById('inputFoto');
     const avatarPreview = document.getElementById('avatarPreview');
     const fotoPreview = document.getElementById('fotoPreview');
@@ -722,14 +729,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Preview
         const reader = new FileReader();
         reader.onload = function(e) {
             atualizarPreview(e.target.result);
         };
         reader.readAsDataURL(file);
 
-        // Upload
         const formData = new FormData();
         formData.append('foto', file);
 
@@ -770,7 +775,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ===== REMOVER FOTO =====
     btnRemover.addEventListener('click', function() {
         if (!confirm('Deseja remover sua foto de perfil?')) return;
         
@@ -816,7 +820,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ===== MOSTRAR/OCULTAR DATA DE CONSAGRAÇÃO =====
     const funcaoSelect = document.querySelector('select[name="funcao"]');
     const consagracaoGroup = document.getElementById('consagracaoGroup');
     
@@ -832,8 +835,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ===== MÁSCARAS =====
-    // Telefone
     const telefoneInput = document.querySelector('input[name="telefone"]');
     if (telefoneInput) {
         telefoneInput.addEventListener('input', function(e) {
@@ -849,7 +850,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // CPF
     const documentoInput = document.querySelector('input[name="documento"]');
     if (documentoInput) {
         documentoInput.addEventListener('input', function(e) {
@@ -865,7 +865,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // CEP
     const cepInput = document.querySelector('input[name="cep"]');
     if (cepInput) {
         cepInput.addEventListener('input', function(e) {
@@ -877,14 +876,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ===== SUBMIT DO FORMULÁRIO =====
     const form = document.getElementById('editForm');
     const btnSubmit = document.getElementById('btnSubmit');
 
-    form.addEventListener('submit', function() {
-        btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-    });
+    if (form) {
+        form.addEventListener('submit', function() {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        });
+    }
 
     console.log('📝 Perfil edit carregado');
     console.log('👤 Usuário: {{ $perfil->nome }}');

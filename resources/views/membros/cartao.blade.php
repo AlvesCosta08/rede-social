@@ -1064,12 +1064,23 @@
                     <div class="header-cartao">
                         <div class="logo-igreja">
                             <div class="cross-icon" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                                <img src="/sistemas/conexao-igreja/public/imagens/logo-branco.png" 
-                                     alt="Logo ADTC2" 
-                                     loading="lazy"
-                                     style="width: 100%; height: 100%; object-fit: contain;"
-                                     onerror="this.style.display='none'; this.parentElement.querySelector('.logo-fallback').style.display='flex';">
-                                <div class="logo-fallback" style="display: none; width: 100%; height: 100%;">
+                                {{-- ⭐ LOGO DINÂMICA - FUNCIONA EM QUALQUER HOSPEDAGEM ⭐ --}}
+                                @php
+                                    // Detecta automaticamente o caminho correto da logo
+                                    $logoPath = public_path('imagens/logo-branco.png');
+                                    $logoUrl = file_exists($logoPath) ? asset('imagens/logo-branco.png') : null;
+                                @endphp
+                                
+                                @if($logoUrl)
+                                    <img src="{{ $logoUrl }}" 
+                                         alt="Logo ADTC2" 
+                                         loading="lazy"
+                                         style="width: 100%; height: 100%; object-fit: contain;"
+                                         onerror="this.style.display='none'; this.parentElement.querySelector('.logo-fallback').style.display='flex';">
+                                @endif
+                                
+                                {{-- ⭐ FALLBACK SVG SEMPRE DISPONÍVEL ⭐ --}}
+                                <div class="logo-fallback" style="{{ $logoUrl ? 'display: none;' : 'display: flex;' }} width: 100%; height: 100%;">
                                     <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
                                         <rect x="17" y="2" width="16" height="46" rx="3" fill="url(#goldGrad)"/>
                                         <rect x="2" y="17" width="46" height="16" rx="3" fill="url(#goldGrad)"/>
@@ -1102,7 +1113,7 @@
                     </div>
 
                     <!-- ============================================================
-                    ⭐ FOTO + NOME - CORRIGIDO COM EVENTO GLOBAL ⭐
+                    ⭐ FOTO + NOME
                     ============================================================ -->
                     <div class="foto-membro">
                         <div class="avatar" id="avatarContainer">
@@ -1122,10 +1133,18 @@
                                 <span class="avatar-placeholder" id="fotoPlaceholder">{{ substr($membro->nome, 0, 1) }}</span>
                             @endif
                             
-                            <button class="btn-trocar-foto" id="btnTrocarFoto" title="Trocar foto">
-                                <i class="fas fa-camera"></i>
-                                <input type="file" id="inputFoto" accept="image/*">
-                            </button>
+                            {{-- ⭐ BOTÃO TROCAR FOTO - APENAS O DONO DO CARTÃO --}}
+                            @php
+                                $usuarioLogado = Auth::user();
+                                $isDono = $usuarioLogado && $usuarioLogado->matricula == $membro->matricula;
+                            @endphp
+                            
+                            @if($isDono)
+                                <button class="btn-trocar-foto" id="btnTrocarFoto" title="Trocar foto">
+                                    <i class="fas fa-camera"></i>
+                                    <input type="file" id="inputFoto" accept="image/*">
+                                </button>
+                            @endif
                         </div>
                         <div class="info-nome">
                             <div class="nome">{{ $membro->nome }}</div>
@@ -1461,8 +1480,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // ⭐ UPLOAD DE FOTO - CORRIGIDO COM EVENTO GLOBAL ⭐
+    // ⭐ UPLOAD DE FOTO - APENAS PARA O DONO DO CARTÃO
     // ============================================================
+    const isDono = {{ $isDono ?? false ? 'true' : 'false' }};
+
+    @if($isDono ?? false)
     const inputFoto = document.getElementById('inputFoto');
     const toastUpload = document.getElementById('toastUpload');
     const toastUploadMessage = document.getElementById('toastUploadMessage');
@@ -1582,22 +1604,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 mostrarUploadToast('Foto atualizada com sucesso! ✅', 'success');
                 
                 if (data.foto_url) {
-                    // Atualiza localmente
                     atualizarFoto(data.foto_url);
                     
-                    // ⭐ DISPARA EVENTO GLOBAL PARA ATUALIZAR TODAS AS FOTOS DA PÁGINA
                     if (window.FotoEvent) {
                         window.FotoEvent.atualizada(data.foto_url);
                         console.log('📸 Evento global de atualização de foto disparado');
-                    } else {
-                        // Fallback: tenta atualizar todas as fotos manualmente
-                        if (window.atualizarTodasFotos) {
-                            window.atualizarTodasFotos(data.foto_url);
-                        }
+                    } else if (window.atualizarTodasFotos) {
+                        window.atualizarTodasFotos(data.foto_url);
                     }
                 }
                 inputFoto.value = '';
-                // Não recarrega a página para não perder a atualização em tempo real
             } else {
                 mostrarUploadToast(data.message || 'Erro ao atualizar foto.', 'error');
                 inputFoto.value = '';
@@ -1627,7 +1643,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Remove localmente
                     const img = document.getElementById('fotoPerfil');
                     if (img) img.remove();
                     
@@ -1643,7 +1658,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         placeholder.style.display = 'flex';
                     }
                     
-                    // ⭐ DISPARA EVENTO GLOBAL DE REMOÇÃO
                     if (window.FotoEvent) {
                         window.FotoEvent.removida();
                         console.log('🗑️ Evento global de remoção de foto disparado');
@@ -1662,6 +1676,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    @endif
 
     window.addEventListener('beforeprint', function() {
         if (virado) {
@@ -1671,6 +1686,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('🕊️ Cartão de Membro - ADTC2');
     console.log(`👤 ${membro.nome} (${membro.matricula})`);
+    console.log(`🏷️ Nível: {{ $nivel ?? 'usuario' }}`);
     console.log('💡 Dê duplo clique na foto para removê-la');
 });
 </script>
