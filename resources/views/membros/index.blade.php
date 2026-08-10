@@ -1138,8 +1138,8 @@
                         <div class="logo-igreja">
                             <div class="cross-icon">
                                 @php
-                                    $logoPath = public_path('imagens/logo-branco.png');
-                                    $logoUrl = file_exists($logoPath) ? asset('imagens/logo-branco.png') : null;
+                                    $logoPath = public_path('/public/imagens/logo-branco.png');
+                                    $logoUrl = file_exists($logoPath) ? asset('/public/imagens/logo-branco.png') : null;
                                 @endphp
                                 
                                 @if($logoUrl)

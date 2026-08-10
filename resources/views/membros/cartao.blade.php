@@ -1063,15 +1063,58 @@
                     <!-- HEADER COM LOGO -->
                     <div class="header-cartao">
                         <div class="logo-igreja">
-                            <div class="cross-icon" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                                {{-- ⭐ LOGO DINÂMICA - FUNCIONA EM QUALQUER HOSPEDAGEM ⭐ --}}
+                            <div class="cross-icon">
+                                {{-- ⭐ LOGO - MÉTODO SIMPLES E DIRETO ⭐ --}}
                                 @php
-                                    // Detecta automaticamente o caminho correto da logo
-                                    $logoPath = public_path('imagens/logo-branco.png');
-                                    $logoUrl = file_exists($logoPath) ? asset('imagens/logo-branco.png') : null;
+                                    $logoEncontrada = false;
+                                    $logoUrl = '';
+                                    
+                                    // Lista de caminhos para testar (ordem de prioridade)
+                                    $caminhos = [
+                                        'imagens/logo-branco.png',
+                                        'img/logo-branco.png',
+                                        'images/logo-branco.png',
+                                        'assets/img/logo-branco.png',
+                                        'assets/images/logo-branco.png',
+                                        'logo-branco.png',
+                                        'imagens/logo.png',
+                                        'img/logo.png',
+                                        'images/logo.png',
+                                        'assets/img/logo.png',
+                                        'assets/images/logo.png',
+                                        'logo.png',
+                                    ];
+                                    
+                                    foreach ($caminhos as $caminho) {
+                                        $caminhoCompleto = public_path($caminho);
+                                        if (file_exists($caminhoCompleto)) {
+                                            $logoUrl = asset($caminho);
+                                            $logoEncontrada = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // Se não encontrou, busca em toda pasta public
+                                    if (!$logoEncontrada) {
+                                        try {
+                                            $iterator = new RecursiveIteratorIterator(
+                                                new RecursiveDirectoryIterator(public_path(), RecursiveDirectoryIterator::SKIP_DOTS)
+                                            );
+                                            foreach ($iterator as $file) {
+                                                if ($file->isFile() && preg_match('/logo.*\.(png|jpg|jpeg|gif|svg|webp)$/i', $file->getFilename())) {
+                                                    $relativePath = str_replace(public_path(), '', $file->getPathname());
+                                                    $logoUrl = asset($relativePath);
+                                                    $logoEncontrada = true;
+                                                    break;
+                                                }
+                                            }
+                                        } catch (Exception $e) {
+                                            // Ignora erro
+                                        }
+                                    }
                                 @endphp
                                 
-                                @if($logoUrl)
+                                @if($logoEncontrada && $logoUrl)
                                     <img src="{{ $logoUrl }}" 
                                          alt="Logo ADTC2" 
                                          loading="lazy"
@@ -1079,8 +1122,8 @@
                                          onerror="this.style.display='none'; this.parentElement.querySelector('.logo-fallback').style.display='flex';">
                                 @endif
                                 
-                                {{-- ⭐ FALLBACK SVG SEMPRE DISPONÍVEL ⭐ --}}
-                                <div class="logo-fallback" style="{{ $logoUrl ? 'display: none;' : 'display: flex;' }} width: 100%; height: 100%;">
+                                {{-- ⭐ FALLBACK SVG (sempre disponível) ⭐ --}}
+                                <div class="logo-fallback" style="{{ ($logoEncontrada && $logoUrl) ? 'display: none;' : 'display: flex;' }} width: 100%; height: 100%; align-items: center; justify-content: center;">
                                     <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
                                         <rect x="17" y="2" width="16" height="46" rx="3" fill="url(#goldGrad)"/>
                                         <rect x="2" y="17" width="46" height="16" rx="3" fill="url(#goldGrad)"/>
@@ -1095,8 +1138,8 @@
                                 </div>
                             </div>
                             <div class="logo-texto">
-                                <div class="logo-nome"></div>
-                                <div class="logo-sub"></div>
+                                <div class="logo-nome">ADTC2</div>
+                                <div class="logo-sub">Assembleia de Deus</div>
                             </div>
                         </div>
                         <div class="chip">
@@ -1312,27 +1355,27 @@
     <div class="botoes-cartao">
         <a href="{{ route('feed.index') }}" class="btn btn-voltar" title="Voltar">
             <i class="fas fa-arrow-left"></i> 
-            <span></span>
+            <span>Voltar</span>
         </a>
 
         <button class="btn btn-girar" id="virarCartao" title="Virar cartão">
             <i class="fas fa-sync-alt"></i> 
-            <span id="btnVirarTexto"></span>
+            <span id="btnVirarTexto">Virar</span>
         </button>
 
         <button class="btn btn-whatsapp" id="compartilharWhatsApp" title="Compartilhar no WhatsApp">
             <i class="fab fa-whatsapp"></i> 
-            <span></span>
+            <span>WhatsApp</span>
         </button>
 
         <button class="btn btn-imprimir" onclick="window.print()" title="Imprimir">
             <i class="fas fa-print"></i> 
-            <span></span>
+            <span>Imprimir</span>
         </button>
 
         <button class="btn btn-copiar" id="copiarDados" title="Copiar dados">
             <i class="fas fa-copy"></i> 
-            <span></span>
+            <span>Copiar</span>
         </button>
     </div>
 </div>

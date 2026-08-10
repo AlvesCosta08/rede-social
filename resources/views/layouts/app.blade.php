@@ -585,8 +585,8 @@
         <div class="sidebar-brand">
             <div class="logo"><i class="fas fa-cross"></i></div>
             <div>
-                <h1>Conexão</h1>
-                <span>Rede Cristã</span>
+                <h1>ADTC2</h1>
+                <span>MARANGUAPE - CE</span>
             </div>
         </div>
 
