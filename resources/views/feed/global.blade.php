@@ -831,7 +831,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    console.log('🌍 Feed Global carregado - AJAX configurado com segurança!');
 
     // ===== CSRF TOKEN =====
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';

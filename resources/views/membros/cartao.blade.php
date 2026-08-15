@@ -1071,7 +1071,7 @@
                                     
                                     // Lista de caminhos para testar (ordem de prioridade)
                                     $caminhos = [
-                                        'imagens/logo-branco.png',
+                                        'resources/imagens/logo-branco.png',
                                         'img/logo-branco.png',
                                         'images/logo-branco.png',
                                         'assets/img/logo-branco.png',
@@ -1136,10 +1136,6 @@
                                         </defs>
                                     </svg>
                                 </div>
-                            </div>
-                            <div class="logo-texto">
-                                <div class="logo-nome">ADTC2</div>
-                                <div class="logo-sub">Assembleia de Deus</div>
                             </div>
                         </div>
                         <div class="chip">
@@ -1641,7 +1637,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Resposta do upload:', data);
             
             if (data.success) {
                 mostrarUploadToast('Foto atualizada com sucesso! ✅', 'success');
@@ -1651,7 +1646,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (window.FotoEvent) {
                         window.FotoEvent.atualizada(data.foto_url);
-                        console.log('📸 Evento global de atualização de foto disparado');
                     } else if (window.atualizarTodasFotos) {
                         window.atualizarTodasFotos(data.foto_url);
                     }
@@ -1703,7 +1697,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (window.FotoEvent) {
                         window.FotoEvent.removida();
-                        console.log('🗑️ Evento global de remoção de foto disparado');
                     } else if (window.removerTodasFotos) {
                         window.removerTodasFotos();
                     }
@@ -1727,10 +1720,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    console.log('🕊️ Cartão de Membro - ADTC2');
-    console.log(`👤 ${membro.nome} (${membro.matricula})`);
-    console.log(`🏷️ Nível: {{ $nivel ?? 'usuario' }}`);
-    console.log('💡 Dê duplo clique na foto para removê-la');
 });
 </script>
 @endpush

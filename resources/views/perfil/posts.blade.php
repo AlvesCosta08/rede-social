@@ -343,8 +343,5 @@
         }
     });
 
-    console.log('📝 Página de posts carregada');
-    console.log('👤 Perfil: {{ $perfil->nome }}');
-    console.log('📄 Total de publicações: {{ $publicacoes->total() }}');
 </script>
 @endsection

@@ -17,4 +17,7 @@ require __DIR__.'/../vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
+// ⭐ Forçar o Laravel a entender o subdiretório
+$app->setBasePath(dirname(__DIR__));
+
 $app->handleRequest(Request::capture());

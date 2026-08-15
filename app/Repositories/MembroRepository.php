@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\Filiado;
+use App\Models\Membro;
 use App\Contracts\Repositories\MembroRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -12,9 +12,31 @@ class MembroRepository implements MembroRepositoryInterface
 {
     protected $model;
 
-    public function __construct(Filiado $model)
+    public function __construct(Membro $model)
     {
         $this->model = $model;
+    }
+
+    /**
+     * Gera matrícula automática
+     */
+    public function generateMatricula(): string
+    {
+        $ano = date('Y');
+        
+        $ultimoMembro = $this->model->on('mysql')
+            ->whereYear('created_at', $ano)
+            ->orderBy('matricula', 'desc')
+            ->first();
+        
+        if ($ultimoMembro && !empty($ultimoMembro->matricula)) {
+            $ultimoNumero = (int) substr($ultimoMembro->matricula, -4);
+            $novoNumero = str_pad($ultimoNumero + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $novoNumero = '0001';
+        }
+        
+        return $ano . $novoNumero;
     }
 
     public function findById(string $matricula): ?object
@@ -74,6 +96,10 @@ class MembroRepository implements MembroRepositoryInterface
 
     public function create(array $data): object
     {
+        if (empty($data['matricula'])) {
+            $data['matricula'] = $this->generateMatricula();
+        }
+        
         return $this->model->on('mysql')->create($data);
     }
 

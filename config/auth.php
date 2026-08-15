@@ -1,6 +1,5 @@
 <?php
-
-use App\Models\User;
+// config/auth.php
 
 return [
 
@@ -17,7 +16,7 @@ return [
 
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'filiados'), // ⭐ MUDADO para 'filiados'
+        'passwords' => env('AUTH_PASSWORD_BROKER', 'membros'), // ⭐ Mudado para 'membros'
     ],
 
     /*
@@ -40,7 +39,13 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'filiados', // ⭐ MUDADO para 'filiados'
+            'provider' => 'membros', // ⭐ Mudado para 'membros'
+        ],
+        
+        // ⭐ Se usar API com Sanctum
+        'api' => [
+            'driver' => 'sanctum',
+            'provider' => 'membros',
         ],
     ],
 
@@ -62,17 +67,23 @@ return [
     */
 
     'providers' => [
-        // ⭐ PROVIDER PARA TABELA filiado
-        'filiados' => [
+        // ⭐ PROVIDER PRINCIPAL - USA O MODEL MEMBRO
+        'membros' => [
             'driver' => 'eloquent',
-            'model' => User::class, // ⭐ USA NOSSO MODEL User (que usa tabela filiado)
+            'model' => App\Models\Membro::class, // ⭐ Model unificado
         ],
 
-        // Mantém o provider 'users' como fallback (opcional)
+        // ⭐ Fallback para compatibilidade (opcional - pode remover)
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'model' => App\Models\Membro::class, // ⭐ Também aponta para Membro
         ],
+        
+        // ⭐ Provider antigo (filiados) - REMOVER ou comentar
+        // 'filiados' => [
+        //     'driver' => 'eloquent',
+        //     'model' => App\Models\User::class,
+        // ],
     ],
 
     /*
@@ -95,14 +106,15 @@ return [
     */
 
     'passwords' => [
-        // ⭐ ADICIONADO provider para filiados
-        'filiados' => [
-            'provider' => 'filiados',
+        // ⭐ Password broker para membros
+        'membros' => [
+            'provider' => 'membros',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,
         ],
 
+        // ⭐ Fallback
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),

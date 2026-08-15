@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Models\Membro;
 use App\Contracts\Repositories\MembroRepositoryInterface;
 
 class PermissaoService
@@ -17,7 +17,7 @@ class PermissaoService
     /**
      * Verifica se o usuário pode editar um membro
      */
-    public function podeEditarMembro(User $user, string $matricula): bool
+    public function podeEditarMembro(Membro $user, string $matricula): bool
     {
         $membro = $this->membroRepository->findById($matricula);
         
@@ -31,7 +31,7 @@ class PermissaoService
     /**
      * Verifica se o usuário pode excluir um membro
      */
-    public function podeExcluirMembro(User $user, string $matricula): bool
+    public function podeExcluirMembro(Membro $user, string $matricula): bool
     {
         $membro = $this->membroRepository->findById($matricula);
         
@@ -45,7 +45,7 @@ class PermissaoService
     /**
      * Verifica se o usuário pode ver um membro
      */
-    public function podeVerMembro(User $user, string $matricula): bool
+    public function podeVerMembro(Membro $user, string $matricula): bool
     {
         $membro = $this->membroRepository->findById($matricula);
         
@@ -59,7 +59,7 @@ class PermissaoService
     /**
      * Verifica se o usuário pode gerenciar secretários
      */
-    public function podeGerenciarSecretarios(User $user): bool
+    public function podeGerenciarSecretarios(Membro $user): bool
     {
         return $user->pode('gerenciar_secretarios');
     }
@@ -67,7 +67,7 @@ class PermissaoService
     /**
      * Verifica se o usuário pode acessar o dashboard
      */
-    public function podeAcessarDashboard(User $user): bool
+    public function podeAcessarDashboard(Membro $user): bool
     {
         return $user->pode('dashboard');
     }

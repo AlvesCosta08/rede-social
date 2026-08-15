@@ -1047,12 +1047,6 @@
         updateSelectedCount();
         
         @if(app()->environment('local'))
-            console.log('🛠️ Painel Administrativo carregado');
-            console.log('📊 Total de membros: {{ $stats['total'] ?? $membros->total() }}');
-            console.log('📊 Ativos: {{ $stats['ativos'] ?? 0 }}');
-            console.log('📊 Inativos: {{ $stats['inativos'] ?? 0 }}');
-            console.log('📊 Transferidos: {{ $stats['transferidos'] ?? 0 }}');
-            console.log('📊 Saída: {{ $stats['saida'] ?? 0 }}');
         @endif
     });
 </script>

@@ -6,26 +6,22 @@ use App\Traits\HasPermissions;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
 
-class User extends Authenticatable
+class Membro extends Authenticatable
 {
-    use Notifiable, HasPermissions;
+    use Notifiable, HasPermissions, HasFactory;
 
-    // ⭐ FORÇA O BANCO mysql
+    // CONEXÃO E TABELA
     protected $connection = 'mysql';
-
-    // ⭐ USA A TABELA EXISTENTE filiado
     protected $table = 'filiado';
-
-    // ⭐ CHAVE PRIMÁRIA É matricula
     protected $primaryKey = 'matricula';
     public $incrementing = false;
     protected $keyType = 'string';
+    public $timestamps = true;
 
-    // ⭐ DESABILITA TIMESTAMPS PADRÃO
-    public $timestamps = false;
-
-    // ⭐ CAMPOS PREENCHÍVEIS
+    // CAMPOS PREENCHÍVEIS
     protected $fillable = [
         'matricula',
         'congregacao',
@@ -68,13 +64,13 @@ class User extends Authenticatable
         'updated_at',
     ];
 
-    // ⭐ CAMPOS OCULTOS
+    // CAMPOS OCULTOS
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    // ⭐ CASTS - REMOVER AS DATAS
+    // CASTS
     protected $casts = [
         'admin' => 'boolean',
         'super_admin' => 'boolean',
@@ -84,148 +80,109 @@ class User extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'numero' => 'integer',
+        'dataNascimento' => 'date:Y-m-d',
+        'datCadastro' => 'date:Y-m-d',
+        'dataBatismo' => 'date:Y-m-d',
+        'data_Consagracao' => 'date:Y-m-d',
+        'data_saida' => 'date:Y-m-d',
     ];
 
-    // ============================================================
-    // ⭐ CONSTANTES DE NÍVEIS
-    // ============================================================
+    // CONSTANTES DE NÍVEIS
     const NIVEL_USUARIO = 'usuario';
     const NIVEL_SECRETARIO = 'secretario';
     const NIVEL_ADMIN = 'admin';
 
+    const STATUS_ATIVO = 'ativo';
+    const STATUS_INATIVO = 'inativo';
+    const STATUS_PENDENTE = 'pendente';
+    const STATUS_TRANSFERIDO = 'transferido';
+    const STATUS_SAIDA = 'saida';
+
     // ============================================================
-    // ⭐ MUTATORS CORRIGIDOS - GARANTEM O FORMATO Y-m-d
+    // MUTATORS - FORMATAM DATAS PARA O BANCO
     // ============================================================
 
-    /**
-     * ⭐ MUTATOR - Data de Nascimento
-     */
     public function setDataNascimentoAttribute($value)
     {
-        $this->attributes['dataNascimento'] = $this->formatDate($value);
+        $this->attributes['dataNascimento'] = $this->formatDateForDb($value);
     }
 
-    /**
-     * ⭐ MUTATOR - Data de Cadastro
-     */
     public function setDatCadastroAttribute($value)
     {
-        $this->attributes['datCadastro'] = $this->formatDate($value);
+        $this->attributes['datCadastro'] = $this->formatDateForDb($value);
     }
 
-    /**
-     * ⭐ MUTATOR - Data de Batismo
-     */
     public function setDataBatismoAttribute($value)
     {
-        $this->attributes['dataBatismo'] = $this->formatDate($value);
+        $this->attributes['dataBatismo'] = $this->formatDateForDb($value);
     }
 
-    /**
-     * ⭐ MUTATOR - Data de Consagração
-     */
     public function setDataConsagracaoAttribute($value)
     {
-        $this->attributes['data_Consagracao'] = $this->formatDate($value);
+        $this->attributes['data_Consagracao'] = $this->formatDateForDb($value);
     }
 
-    /**
-     * ⭐ MUTATOR - Data de Saída
-     */
     public function setDataSaidaAttribute($value)
     {
-        $this->attributes['data_saida'] = $this->formatDate($value);
+        $this->attributes['data_saida'] = $this->formatDateForDb($value);
     }
 
-    /**
-     * ⭐ FUNÇÃO AUXILIAR - Formata qualquer data para Y-m-d
-     */
-    private function formatDate($value)
+    private function formatDateForDb($value): ?string
     {
-        // Se for null ou vazio, retorna null
         if (empty($value)) {
             return null;
         }
 
-        // Se já estiver no formato Y-m-d, mantém
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             return $value;
         }
 
-        // Se estiver no formato d/m/Y, converte
         if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $value)) {
             try {
-                $date = \Carbon\Carbon::createFromFormat('d/m/Y', $value);
-                return $date->format('Y-m-d');
+                return Carbon::createFromFormat('d/m/Y', $value)->format('Y-m-d');
             } catch (\Exception $e) {
                 return null;
             }
         }
 
-        // Se tiver horas (YYYY-MM-DD HH:MM:SS), extrai só a data
-        if (strpos($value, ' ') !== false) {
-            $parts = explode(' ', $value);
-            $datePart = $parts[0];
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePart)) {
-                return $datePart;
-            }
-        }
-
-        // Tenta converter qualquer formato válido
         try {
-            $date = \Carbon\Carbon::parse($value);
-            return $date->format('Y-m-d');
+            return Carbon::parse($value)->format('Y-m-d');
         } catch (\Exception $e) {
             return null;
         }
     }
 
     // ============================================================
-    // ⭐ ACCESSORS - FORMATAM AS DATAS PARA EXIBIÇÃO
+    // ACCESSORS - FORMATAM DATAS PARA EXIBIÇÃO
     // ============================================================
 
-    public function getDataNascimentoFormatadaAttribute()
+    public function getDataNascimentoFormatadaAttribute(): string
     {
-        if (empty($this->dataNascimento)) {
-            return 'Não informado';
-        }
-        return \Carbon\Carbon::parse($this->dataNascimento)->format('d/m/Y');
+        return $this->dataNascimento ? Carbon::parse($this->dataNascimento)->format('d/m/Y') : 'Não informado';
     }
 
-    public function getDataBatismoFormatadaAttribute()
+    public function getDatCadastroFormatadaAttribute(): string
     {
-        if (empty($this->dataBatismo)) {
-            return 'Não informado';
-        }
-        return \Carbon\Carbon::parse($this->dataBatismo)->format('d/m/Y');
+        return $this->datCadastro ? Carbon::parse($this->datCadastro)->format('d/m/Y') : 'Não informado';
     }
 
-    public function getDataConsagracaoFormatadaAttribute()
+    public function getDataBatismoFormatadaAttribute(): string
     {
-        if (empty($this->data_Consagracao)) {
-            return 'Não informado';
-        }
-        return \Carbon\Carbon::parse($this->data_Consagracao)->format('d/m/Y');
+        return $this->dataBatismo ? Carbon::parse($this->dataBatismo)->format('d/m/Y') : 'Não informado';
     }
 
-    public function getDataCadastroFormatadaAttribute()
+    public function getDataConsagracaoFormatadaAttribute(): string
     {
-        if (empty($this->datCadastro)) {
-            return 'Não informado';
-        }
-        return \Carbon\Carbon::parse($this->datCadastro)->format('d/m/Y');
+        return $this->data_Consagracao ? Carbon::parse($this->data_Consagracao)->format('d/m/Y') : 'Não informado';
     }
 
-    public function getDataSaidaFormatadaAttribute()
+    public function getDataSaidaFormatadaAttribute(): string
     {
-        if (empty($this->data_saida)) {
-            return 'Não informado';
-        }
-        return \Carbon\Carbon::parse($this->data_saida)->format('d/m/Y');
+        return $this->data_saida ? Carbon::parse($this->data_saida)->format('d/m/Y') : 'Não informado';
     }
 
     // ============================================================
-    // ⭐ ACCESSORS ADICIONAIS
+    // ACCESSORS ADICIONAIS
     // ============================================================
 
     public function getNomeAttribute($value): string
@@ -251,6 +208,11 @@ class User extends Authenticatable
     public function getSeguidoresCountAttribute(): int
     {
         return $this->seguidores()->count();
+    }
+
+    public function getPublicacoesCountAttribute(): int
+    {
+        return $this->publicacoes()->count();
     }
 
     public function getStatusBadgeAttribute(): string
@@ -308,127 +270,94 @@ class User extends Authenticatable
     }
 
     // ============================================================
-    // ⭐ MÉTODOS DE VERIFICAÇÃO DE NÍVEL
+    // MÉTODOS DE VERIFICAÇÃO DE NÍVEL
     // ============================================================
 
-    /**
-     * Verifica se o usuário é Administrador
-     */
     public function isAdmin(): bool
     {
-        return $this->nivel === self::NIVEL_ADMIN || $this->admin === true || $this->super_admin === true;
+        return $this->nivel === self::NIVEL_ADMIN || 
+               $this->admin === true || 
+               $this->super_admin === true;
     }
 
-    /**
-     * Verifica se o usuário é Super Admin (campo admin da tabela)
-     */
     public function isSuperAdmin(): bool
     {
         return $this->admin === true || $this->super_admin === true;
     }
 
-    /**
-     * Verifica se o usuário é Secretário
-     */
     public function isSecretario(): bool
     {
         return $this->nivel === self::NIVEL_SECRETARIO;
     }
 
-    /**
-     * Verifica se o usuário é Membro comum
-     */
     public function isUsuario(): bool
     {
-        return $this->nivel === self::NIVEL_USUARIO;
+        return $this->nivel === self::NIVEL_USUARIO || 
+               ($this->nivel === null && !$this->isAdmin() && !$this->isSecretario());
     }
 
-    /**
-     * Verifica se o usuário está ativo
-     */
     public function isAtivo(): bool
     {
         return in_array(strtolower($this->status ?? ''), ['ativo', 'membro']);
     }
 
+    public function isPendente(): bool
+    {
+        return strtolower($this->status ?? '') === 'pendente';
+    }
+
+    public function isInativo(): bool
+    {
+        return strtolower($this->status ?? '') === 'inativo';
+    }
+
+    public function isTransferido(): bool
+    {
+        return strtolower($this->status ?? '') === 'transferido';
+    }
+
+    public function isSaida(): bool
+    {
+        return strtolower($this->status ?? '') === 'saida';
+    }
+
     // ============================================================
-    // ⭐ MÉTODO PRINCIPAL DE PERMISSÃO - PODE()
+    // MÉTODO PRINCIPAL DE PERMISSÃO
     // ============================================================
 
-    /**
-     * Método mágico para verificar qualquer permissão
-     * 
-     * Exemplo: $user->pode('editar_membro', $membro)
-     *          $user->pode('criar_membro')
-     *          $user->pode('dashboard')
-     *          $user->pode('excluir_membro')
-     */
     public function pode(string $acao, $membro = null): bool
     {
-        // ⭐ ADMIN: tem todas as permissões
-        if ($this->isAdmin() || $this->isSuperAdmin()) {
+        if ($this->isAdmin()) {
             return true;
         }
 
-        // ⭐ SECRETÁRIO: permissões limitadas à sua congregação
         if ($this->isSecretario()) {
             return match ($acao) {
-                // Pode editar membros da sua congregação
                 'editar_membro' => $membro && $this->congregacao === $membro->congregacao,
-                
-                // Pode criar membros (na sua congregação)
                 'criar_membro' => true,
-                
-                // Pode ver o dashboard
                 'dashboard' => true,
-                
-                // Pode ver lista de membros
                 'ver_membros' => true,
-                
-                // Pode ver detalhes de membros
                 'ver_membro' => true,
-                
-                // Pode exportar dados da sua congregação
                 'exportar_membros' => true,
-                
-                // NÃO pode excluir membros
-                'excluir_membro' => false,
-                
-                // NÃO pode gerenciar secretários
+                'excluir_membro' => $membro && $this->congregacao === $membro->congregacao,
+                'excluir_propria_conta' => false,
                 'gerenciar_secretarios' => false,
-                
-                // NÃO pode ver dados financeiros
                 'ver_financeiro' => false,
-                
-                // NÃO pode configurar o sistema
                 'configurar_sistema' => false,
-                
                 default => false,
             };
         }
 
-        // ⭐ USUÁRIO COMUM: permissões básicas
         if ($this->isUsuario()) {
             return match ($acao) {
-                // Só pode editar a si mesmo
                 'editar_membro' => $membro && $this->matricula === $membro->matricula,
-                
-                // Pode ver perfis
                 'ver_membro' => true,
                 'ver_membros' => true,
-                
-                // NÃO pode criar membros
+                'excluir_propria_conta' => true,
                 'criar_membro' => false,
-                
-                // NÃO pode excluir
                 'excluir_membro' => false,
-                
-                // NÃO pode acessar dashboard
                 'dashboard' => false,
-                
-                // NÃO pode exportar
                 'exportar_membros' => false,
-                
                 default => false,
             };
         }
@@ -437,104 +366,47 @@ class User extends Authenticatable
     }
 
     // ============================================================
-    // ⭐ MÉTODOS DE PERMISSÃO ESPECÍFICOS (COMPATIBILIDADE)
+    // MÉTODO PARA VERIFICAR SE PODE EXCLUIR UM MEMBRO ESPECÍFICO
     // ============================================================
 
-    /**
-     * Verifica se o usuário pode editar membros
-     */
-    public function canEditMembers(): bool
+    public function podeExcluirMembro($membro): bool
     {
-        return $this->pode('editar_membro');
-    }
+        if ($this->isAdmin()) {
+            return true;
+        }
 
-    /**
-     * Verifica se o usuário pode excluir membros
-     */
-    public function canDeleteMembers(): bool
-    {
-        return $this->pode('excluir_membro');
-    }
+        if ($this->isSecretario()) {
+            return $membro && $this->congregacao === $membro->congregacao;
+        }
 
-    /**
-     * Verifica se o usuário pode moderar posts
-     */
-    public function canModeratePosts(): bool
-    {
-        return $this->isAdmin() || $this->isSuperAdmin();
-    }
-
-    /**
-     * Verifica se o usuário pode visualizar membros
-     */
-    public function canViewMembers(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário pode seguir outros
-     */
-    public function canFollow(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário pode comentar
-     */
-    public function canComment(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário pode curtir
-     */
-    public function canLike(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário pode criar posts
-     */
-    public function canCreatePosts(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário pode editar seus próprios posts
-     */
-    public function canEditOwnPosts(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário pode excluir seus próprios posts
-     */
-    public function canDeleteOwnPosts(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifica se o usuário tem permissão específica via trait
-     */
-    public function hasPermission(string $permission): bool
-    {
-        return $this->pode($permission);
+        return false;
     }
 
     // ============================================================
-    // ⭐ RELACIONAMENTOS
+    // MÉTODO PARA VERIFICAR SE PODE EXCLUIR A PRÓPRIA CONTA
     // ============================================================
 
-    /**
-     * Relacionamento de seguidores (quem segue este usuário)
-     */
+    public function podeExcluirPropriaConta(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if ($this->isSecretario()) {
+            return false;
+        }
+
+        if ($this->isUsuario()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // ============================================================
+    // RELACIONAMENTOS
+    // ============================================================
+
     public function seguidores(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -547,9 +419,6 @@ class User extends Authenticatable
         );
     }
 
-    /**
-     * Relacionamento de seguindo (quem este usuário segue)
-     */
     public function seguindo(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -562,48 +431,33 @@ class User extends Authenticatable
         );
     }
 
-    /**
-     * Verifica se segue um membro específico
-     */
-    public function segue(User $membro): bool
+    public function segue(Membro $membro): bool
     {
         return $this->seguindo()->where('matricula', $membro->matricula)->exists();
     }
 
-    /**
-     * Verifica se é seguido por um membro específico
-     */
-    public function isSeguidoPor(User $membro): bool
+    public function isSeguidoPor(Membro $membro): bool
     {
         return $this->seguidores()->where('matricula', $membro->matricula)->exists();
     }
 
-    /**
-     * Publicações do usuário
-     */
     public function publicacoes()
     {
         return $this->hasMany(Publicacao::class, 'filiado_matricula', 'matricula');
     }
 
-    /**
-     * Comentários do usuário
-     */
     public function comentarios()
     {
         return $this->hasMany(Comentario::class, 'filiado_matricula', 'matricula');
     }
 
-    /**
-     * Curtidas do usuário
-     */
     public function curtidas()
     {
         return $this->hasMany(Curtida::class, 'filiado_matricula', 'matricula');
     }
 
     // ============================================================
-    // ⭐ SCOPES
+    // SCOPES
     // ============================================================
 
     public function scopeAtivo($query)
@@ -611,9 +465,36 @@ class User extends Authenticatable
         return $query->whereIn('status', ['ativo', 'membro']);
     }
 
+    public function scopeInativo($query)
+    {
+        return $query->where('status', 'inativo');
+    }
+
+    public function scopePendente($query)
+    {
+        return $query->where('status', 'pendente');
+    }
+
+    public function scopeAtivos($query)
+    {
+        return $query->whereIn('status', ['ativo', 'membro']);
+    }
+
     public function scopeAdministradores($query)
     {
-        return $query->where('admin', true)->orWhere('super_admin', true);
+        return $query->where('nivel', self::NIVEL_ADMIN)
+                     ->orWhere('admin', true)
+                     ->orWhere('super_admin', true);
+    }
+
+    public function scopeSecretarios($query)
+    {
+        return $query->where('nivel', self::NIVEL_SECRETARIO);
+    }
+
+    public function scopeUsuarios($query)
+    {
+        return $query->where('nivel', self::NIVEL_USUARIO);
     }
 
     public function scopePorFuncao($query, $funcao)
@@ -624,6 +505,16 @@ class User extends Authenticatable
     public function scopePorCongregacao($query, $congregacao)
     {
         return $query->where('congregacao', $congregacao);
+    }
+
+    public function scopePorCidade($query, $cidade)
+    {
+        return $query->where('cidade', $cidade);
+    }
+
+    public function scopePorUf($query, $uf)
+    {
+        return $query->where('uf', $uf);
     }
 
     public function scopeBuscar($query, $termo)
@@ -638,53 +529,30 @@ class User extends Authenticatable
         });
     }
 
-    /**
-     * Scope para filtrar apenas admins
-     */
-    public function scopeAdmins($query)
+    public function scopeProximos($query, float $lat, float $lng, float $distanciaKm = 10)
     {
-        return $query->where('nivel', self::NIVEL_ADMIN);
-    }
-
-    /**
-     * Scope para filtrar apenas secretários
-     */
-    public function scopeSecretarios($query)
-    {
-        return $query->where('nivel', self::NIVEL_SECRETARIO);
-    }
-
-    /**
-     * Scope para filtrar apenas usuários comuns
-     */
-    public function scopeUsuarios($query)
-    {
-        return $query->where('nivel', self::NIVEL_USUARIO);
+        return $query->selectRaw("*, 
+            (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * 
+            cos(radians(longitude) - radians(?)) + sin(radians(?)) * 
+            sin(radians(latitude)))) AS distancia", [$lat, $lng, $lat])
+            ->having('distancia', '<', $distanciaKm)
+            ->orderBy('distancia');
     }
 
     // ============================================================
-    // ⭐ MÉTODOS DE AUTENTICAÇÃO
+    // MÉTODOS DE AUTENTICAÇÃO
     // ============================================================
 
-    /**
-     * Nome do campo usado para autenticação
-     */
     public function getAuthIdentifierName(): string
     {
         return 'matricula';
     }
 
-    /**
-     * Valor do identificador
-     */
     public function getAuthIdentifier()
     {
         return $this->matricula;
     }
 
-    /**
-     * Senha para autenticação
-     */
     public function getAuthPassword(): string
     {
         return $this->password;

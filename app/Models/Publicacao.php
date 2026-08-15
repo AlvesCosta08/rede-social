@@ -33,7 +33,7 @@ class Publicacao extends Model
 
     public function autor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'filiado_matricula', 'matricula');
+        return $this->belongsTo(Membro::class, 'filiado_matricula', 'matricula');
     }
 
     public function comentarios(): HasMany
@@ -50,7 +50,7 @@ class Publicacao extends Model
     // MÉTODOS AUXILIARES
     // ============================================================
 
-    public function isCurtidoPor(User $user): bool
+    public function isCurtidoPor(Membro $user): bool
     {
         return $this->curtidas()
             ->where('filiado_matricula', $user->matricula)
@@ -76,12 +76,12 @@ class Publicacao extends Model
     // SCOPES
     // ============================================================
 
-    public function scopeDoUsuario($query, User $user)
+    public function scopeDoUsuario($query, Membro $user)
     {
         return $query->where('filiado_matricula', $user->matricula);
     }
 
-    public function scopeDosSeguidos($query, User $user)
+    public function scopeDosSeguidos($query, Membro $user)
     {
         $seguindoIds = $user->seguindo()->pluck('matricula')->toArray();
         $seguindoIds[] = $user->matricula;

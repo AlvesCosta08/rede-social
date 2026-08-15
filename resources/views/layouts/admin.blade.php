@@ -4,13 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Conexão Igreja')</title>
+    <title>@yield('title', 'Conexão Igreja - Admin')</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    {{-- ⭐ ASSETS DIRETOS (SEM VITE) --}}
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ time() }}">
     
     <style>
         /* ============================================================
@@ -585,8 +594,8 @@
         <div class="sidebar-brand">
             <div class="logo"><i class="fas fa-cross"></i></div>
             <div>
-                <h1>Conexão</h1>
-                <span>Rede Cristã</span>
+                <h1>ADTC2</h1>
+                <span>MARANGUAPE - CE</span>
             </div>
         </div>
 
@@ -601,7 +610,7 @@
                 <i class="fas fa-user"></i> Perfil
             </a>
             
-            <a href="{{ route('membro.meu-cartao') }}" class="{{ request()->routeIs('membro.*') ? 'active' : '' }}">
+            <a href="{{ route('cartao.meu-cartao') }}" class="{{ request()->routeIs('cartao.*') ? 'active' : '' }}">
                 <i class="fas fa-id-card"></i> Cartão Digital
             </a>
             
@@ -617,7 +626,6 @@
             @if(auth()->user()?->pode('dashboard'))
                 <div class="nav-label" style="margin-top: 20px;">Administração</div>
                 
-                <!-- ⭐ GERENCIAR MEMBROS - ADMIN E SECRETÁRIO -->
                 <a href="{{ route('admin.membros.index') }}" class="{{ request()->routeIs('admin.membros.*') ? 'active' : '' }}">
                     <i class="fas fa-users-cog"></i> Gerenciar Membros
                     @if(auth()->user()->isAdmin())
@@ -627,12 +635,10 @@
                     @endif
                 </a>
 
-                <!-- ⭐ ESTATÍSTICAS - ADMIN E SECRETÁRIO -->
                 <a href="{{ route('admin.estatisticas') }}" class="{{ request()->routeIs('admin.estatisticas') ? 'active' : '' }}">
                     <i class="fas fa-chart-bar"></i> Estatísticas
                 </a>
 
-                <!-- ⭐ GERENCIAR SECRETÁRIOS - APENAS ADMIN -->
                 @if(auth()->user()->isAdmin())
                     <a href="{{ route('admin.secretarios.index') }}" class="{{ request()->routeIs('admin.secretarios.*') ? 'active' : '' }}">
                         <i class="fas fa-user-tie"></i> Secretários
@@ -675,7 +681,6 @@
                 </div>
             </div>
             
-            <!-- ✅ LOGOUT CORRIGIDO - USANDO FORMULÁRIO POST -->
             <form action="{{ route('logout') }}" method="POST" class="logout-form">
                 @csrf
                 <button type="submit" class="logout-btn" title="Sair">
@@ -690,7 +695,6 @@
     MAIN CONTENT
     ============================================================ -->
     <main class="main-content">
-        <!-- TOP BAR - ✅ MELHORADO: Usa Auth -->
         @auth
         <div class="top-bar">
             <div class="page-title">
@@ -737,8 +741,15 @@
     </main>
 
     <!-- ============================================================
-    SCRIPTS - ✅ MELHORADO
+    BOOTSTRAP 5 JS
     ============================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ============================================================
+    SCRIPTS
+    ============================================================ -->
+    <script src="{{ asset('js/app.js') }}?v={{ time() }}"></script>
+
     <script>
         // ===== TEMA CLARO/ESCURO =====
         function toggleTheme() {
@@ -749,7 +760,6 @@
             localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
         }
 
-        // Carregar tema salvo
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark');
             const icon = document.getElementById('themeIcon');
@@ -774,7 +784,6 @@
             overlay.addEventListener('click', toggleSidebar);
         }
 
-        // Fechar sidebar ao redimensionar para desktop
         window.addEventListener('resize', () => {
             if (window.innerWidth > 992) {
                 sidebar?.classList.remove('open');
@@ -821,7 +830,6 @@
             const timestamp = new Date().getTime();
             const urlComTimestamp = url + '?t=' + timestamp;
             
-            // Atualiza todas as imagens de perfil
             document.querySelectorAll('img[id="fotoPerfil"], img[id="fotoPreview"], #sidebarAvatar, .avatar img, .profile-avatar img, .member-avatar img, .foto-membro img').forEach(img => {
                 img.src = urlComTimestamp;
                 img.style.display = 'block';
@@ -834,12 +842,10 @@
                 };
             });
             
-            // Oculta placeholders
             document.querySelectorAll('.placeholder, .avatar-placeholder').forEach(el => {
                 el.style.display = 'none';
             });
             
-            console.log('📸 Fotos atualizadas globalmente:', url);
         }
 
         function removerTodasFotos() {
@@ -851,7 +857,6 @@
                 el.style.display = 'flex';
             });
             
-            console.log('🗑️ Fotos removidas globalmente');
         }
 
         window.atualizarTodasFotos = atualizarTodasFotos;
@@ -865,19 +870,11 @@
             removerTodasFotos();
         });
 
-        console.log('🔄 Sistema global de atualização de fotos carregado');
-        console.log('🕊️ Conexão Igreja - Rede Social Cristã');
         
         @auth
-            console.log('👤 Logado como: {{ auth()->user()->nome }}');
-            console.log('📋 Matrícula: {{ auth()->user()->matricula }}');
             @if(auth()->user()->isAdmin())
-                console.log('🔐 Acesso administrativo detectado');
-                console.log('👑 Nível: ADMIN');
             @elseif(auth()->user()->isSecretario())
-                console.log('📋 Nível: SECRETÁRIO');
             @else
-                console.log('👤 Nível: USUÁRIO');
             @endif
         @endauth
     </script>
@@ -885,4 +882,3 @@
     @stack('scripts')
 </body>
 </html>
-EOF

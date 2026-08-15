@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Membro; // ⭐ ADICIONADO PARA REFERÊNCIA
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Auth; // ⭐ ADICIONADO
+use Illuminate\Support\Facades\Auth;
 
 class ImagemController extends Controller
 {
@@ -52,7 +53,7 @@ class ImagemController extends Controller
         try {
             // ✅ VERIFICA SE É UMA IMAGEM VÁLIDA
             $mimeType = mime_content_type($filePath);
-            if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+            if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'])) {
                 Log::warning('⚠️ Tipo MIME inválido', [
                     'filename' => $filename,
                     'mime_type' => $mimeType,
@@ -64,14 +65,16 @@ class ImagemController extends Controller
 
             // ✅ RETORNA A IMAGEM COM CACHE
             $fileContent = file_get_contents($filePath);
+            $lastModified = filemtime($filePath);
             
             $response = response($fileContent, 200)
                 ->header('Content-Type', $mimeType)
                 ->header('Content-Length', filesize($filePath))
-                ->header('Cache-Control', 'public, max-age=86400, must-revalidate')
+                ->header('Cache-Control', 'public, max-age=604800, must-revalidate') // 7 dias
                 ->header('Pragma', 'public')
-                ->header('Expires', gmdate('D, d M Y H:i:s', time() + 86400) . ' GMT')
-                ->header('Last-Modified', gmdate('D, d M Y H:i:s', filemtime($filePath)) . ' GMT');
+                ->header('Expires', gmdate('D, d M Y H:i:s', time() + 604800) . ' GMT')
+                ->header('Last-Modified', gmdate('D, d M Y H:i:s', $lastModified) . ' GMT')
+                ->header('ETag', '"' . md5($fileContent) . '"');
 
             Log::info('📸 Imagem servida', [
                 'filename' => $filename,
@@ -96,29 +99,32 @@ class ImagemController extends Controller
     /**
      * Validar nome do arquivo (evitar path traversal)
      */
-    private function validateFilename($filename)
+    private function validateFilename($filename): bool
     {
         // ✅ NOME DEVE TER EXTENSÃO VÁLIDA
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'JPG', 'JPEG', 'PNG', 'GIF', 'WEBP'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'JPG', 'JPEG', 'PNG', 'GIF', 'WEBP', 'SVG'];
         
         if (!in_array($extension, $allowedExtensions)) {
             return false;
         }
 
         // ✅ NOME DEVE TER O FORMATO ESPERADO (timestamp_matricula.ext)
-        $pattern = '/^[0-9]+_[0-9]+\.[a-zA-Z]+$/';
-        if (!preg_match($pattern, $filename)) {
+        // Permite também nomes sem underscore (para imagens padrão)
+        if (!preg_match('/^[0-9]+_[0-9]+\.[a-zA-Z]+$/', $filename) && 
+            !preg_match('/^[a-zA-Z0-9_-]+\.[a-zA-Z]+$/', $filename)) {
             return false;
         }
 
         // ✅ EVITA PATH TRAVERSAL
-        if (strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+        if (strpos($filename, '..') !== false || 
+            strpos($filename, '/') !== false || 
+            strpos($filename, '\\') !== false) {
             return false;
         }
 
         // ✅ EVITA ARQUIVOS PERIGOSOS
-        $dangerous = ['php', 'exe', 'bat', 'sh', 'cmd', 'js', 'html', 'htm'];
+        $dangerous = ['php', 'exe', 'bat', 'sh', 'cmd', 'js', 'html', 'htm', 'xml'];
         if (in_array(strtolower($extension), $dangerous)) {
             return false;
         }
@@ -131,49 +137,29 @@ class ImagemController extends Controller
      */
     private function getDefaultImage()
     {
-        // ✅ CRIA UMA IMAGEM PADRÃO DINAMICAMENTE
-        $width = 200;
-        $height = 200;
-        $image = imagecreatetruecolor($width, $height);
-        
-        // Cor de fundo (roxo)
-        $bgColor = imagecolorallocate($image, 108, 60, 225);
-        imagefill($image, 0, 0, $bgColor);
-        
-        // Texto
-        $textColor = imagecolorallocate($image, 255, 255, 255);
-        $text = '👤';
-        
-        // Usar GD para criar imagem
-        $fontSize = 80;
-        $font = public_path('fonts/arial.ttf');
-        
-        if (file_exists($font)) {
-            $textBox = imagettfbbox($fontSize, 0, $font, $text);
-            $textWidth = $textBox[2] - $textBox[0];
-            $textHeight = $textBox[1] - $textBox[7];
-            $x = ($width - $textWidth) / 2;
-            $y = ($height - $textHeight) / 2 + $textHeight;
-            imagettftext($image, $fontSize, 0, $x, $y, $textColor, $font, $text);
-        } else {
-            // Fallback: texto simples
-            $x = ($width - 40) / 2;
-            $y = ($height - 20) / 2;
-            imagestring($image, 5, $x, $y, 'USER', $textColor);
-        }
-
-        // Salva em buffer
-        ob_start();
-        imagepng($image);
-        $imageData = ob_get_clean();
-        imagedestroy($image);
-
         Log::info('🖼️ Imagem padrão gerada', [
             'ip' => request()->ip()
         ]);
 
-        return response($imageData, 200)
-            ->header('Content-Type', 'image/png')
+        // ⭐ Cria uma imagem SVG moderna com iniciais
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+            <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#6C63FF;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#4A47A3;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <rect width="200" height="200" rx="100" fill="url(#grad)"/>
+            <circle cx="100" cy="80" r="35" fill="rgba(255,255,255,0.3)"/>
+            <circle cx="100" cy="80" r="25" fill="white"/>
+            <circle cx="100" cy="80" r="20" fill="#6C63FF"/>
+            <circle cx="100" cy="140" r="45" fill="rgba(255,255,255,0.3)"/>
+            <circle cx="100" cy="145" r="35" fill="white"/>
+            <text x="100" y="155" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#6C63FF" text-anchor="middle">👤</text>
+        </svg>';
+
+        return response($svg)
+            ->header('Content-Type', 'image/svg+xml')
             ->header('Cache-Control', 'public, max-age=86400')
             ->header('Expires', gmdate('D, d M Y H:i:s', time() + 86400) . ' GMT');
     }
@@ -193,8 +179,13 @@ class ImagemController extends Controller
             ], 401);
         }
 
-        // ⭐ VERIFICA SE O USUÁRIO PODE FAZER UPLOAD (SEMPRE PODE, É SEU PRÓPRIO PERFIL)
-        // Não há restrição adicional aqui, pois o usuário só pode alterar sua própria foto
+        // ⭐ VERIFICA SE O USUÁRIO PODE FAZER UPLOAD
+        if (!$user->pode('editar_membro', $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Você não tem permissão para alterar sua foto.'
+            ], 403);
+        }
 
         $request->validate([
             'foto' => 'required|image|max:2048|mimes:jpeg,png,gif,webp'
@@ -226,7 +217,8 @@ class ImagemController extends Controller
 
             Log::info('📸 Upload de foto via ImagemController', [
                 'matricula' => $user->matricula,
-                'arquivo' => $nomeArquivo
+                'arquivo' => $nomeArquivo,
+                'ip' => request()->ip()
             ]);
 
             return response()->json([
@@ -238,12 +230,72 @@ class ImagemController extends Controller
         } catch (\Exception $e) {
             Log::error('❌ Erro no upload', [
                 'matricula' => $user->matricula,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'ip' => request()->ip()
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao fazer upload: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remover imagem (método alternativo)
+     */
+    public function destroy(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuário não autenticado.'
+            ], 401);
+        }
+
+        // ⭐ VERIFICA SE O USUÁRIO PODE REMOVER A FOTO
+        if (!$user->pode('editar_membro', $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Você não tem permissão para remover sua foto.'
+            ], 403);
+        }
+
+        try {
+            if ($user->foto) {
+                Storage::disk('public')->delete('fotos/' . $user->foto);
+                
+                $publicPath = public_path('storage/fotos/' . $user->foto);
+                if (file_exists($publicPath)) {
+                    unlink($publicPath);
+                }
+
+                $user->foto = null;
+                $user->save();
+
+                Log::info('🗑️ Foto removida via ImagemController', [
+                    'matricula' => $user->matricula,
+                    'ip' => request()->ip()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Foto removida com sucesso!'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao remover foto', [
+                'matricula' => $user->matricula,
+                'error' => $e->getMessage(),
+                'ip' => request()->ip()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao remover foto.'
             ], 500);
         }
     }

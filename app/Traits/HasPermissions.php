@@ -176,7 +176,7 @@ trait HasPermissions
         }
 
         // ⭐ USUÁRIO COMUM - PERMISSÕES BÁSICAS
-        $userPermissions = $this->getUserPermissions();
+        $userPermissions = $this->getMemberPermissions(); // ⭐ MUDADO de getUserPermissions para getMemberPermissions
 
         return in_array($permission, $userPermissions);
     }
@@ -184,8 +184,9 @@ trait HasPermissions
     /**
      * Permissões base do usuário
      * ✅ EXTRAÍDO PARA MÉTODO
+     * ⭐ RENOMEADO DE getUserPermissions para getMemberPermissions
      */
-    protected function getUserPermissions(): array
+    protected function getMemberPermissions(): array // ⭐ MUDADO de getUserPermissions
     {
         $base = [
             'ver_membro',

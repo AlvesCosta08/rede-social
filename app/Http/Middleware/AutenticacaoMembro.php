@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
-use App\Models\User;
+use App\Models\Membro;
 use Symfony\Component\HttpFoundation\Response;
 
 class AutenticacaoMembro
@@ -33,7 +33,7 @@ class AutenticacaoMembro
         // 2. VERIFICA SESSÃO LEGADA (FALLBACK)
         if (Session::has('membro_logado')) {
             $matricula = Session::get('membro_logado');
-            $user = User::where('matricula', $matricula)->first();
+            $user = Membro::where('matricula', $matricula)->first();
             
             // ✅ VERIFICAÇÃO MAIS ROBUSTA
             if ($user && $this->isUsuarioAtivo($user)) {

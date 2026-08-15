@@ -149,7 +149,9 @@
     document.addEventListener('DOMContentLoaded', function() {
         const selectMembro = document.getElementById('membro');
         const form = document.getElementById('formPromoverSecretario');
-        const baseUrl = "{{ route('admin.secretarios.update', ['user' => '__MATRICULA__']) }}";
+        
+        {{-- ⭐ CORRIGIDO: parâmetro 'matricula' --}}
+        const baseUrl = "{{ route('admin.secretarios.update', ['matricula' => '__MATRICULA__']) }}";
         
         if (selectMembro) {
             selectMembro.addEventListener('change', function() {

@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - ADTC2 MARANGUAPE</title>
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Vite - CSS e JS -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
     <style>
-        /* ============================================================
-           RESET E BASE
-           ============================================================ */
         * { 
             margin: 0; 
             padding: 0; 
@@ -30,7 +33,6 @@
             overflow: hidden;
         }
         
-        /* Efeito de fundo */
         body::before {
             content: '';
             position: absolute;
@@ -48,9 +50,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* ============================================================
-           CONTAINER PRINCIPAL - RESPONSIVO
-           ============================================================ */
         .login-container {
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(20px);
@@ -68,20 +67,15 @@
             z-index: 1;
         }
         
-        /* Scroll suave no container */
         .login-container::-webkit-scrollbar { width: 3px; }
         .login-container::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 10px; }
         .login-container::-webkit-scrollbar-track { background: transparent; }
         
-        /* ============================================================
-           HEADER
-           ============================================================ */
         .login-header {
             text-align: center;
             margin-bottom: clamp(12px, 2.5vh, 35px);
         }
         
-        /* ===== LOGO ===== */
         .logo-igreja {
             display: flex;
             flex-direction: column;
@@ -119,15 +113,9 @@
             display: block;
         }
         
-        .logo-igreja .cross-icon .logo-fallback {
-            display: none;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .logo-igreja .cross-icon .logo-fallback svg {
-            width: 100%;
-            height: 100%;
+        .logo-igreja .cross-icon .fallback-icon {
+            font-size: 2.5rem;
+            color: #d4af37;
         }
         
         .logo-igreja .logo-texto {
@@ -169,9 +157,6 @@
             margin: clamp(6px, 1.2vh, 15px) auto;
         }
         
-        /* ============================================================
-           FORMULÁRIO
-           ============================================================ */
         .form-group { 
             margin-bottom: clamp(10px, 1.8vh, 20px); 
         }
@@ -227,9 +212,6 @@
             display: block;
         }
         
-        /* ============================================================
-           LEMBRAR-ME
-           ============================================================ */
         .remember-group {
             display: flex;
             align-items: center;
@@ -253,9 +235,6 @@
             font-weight: 400;
         }
         
-        /* ============================================================
-           BOTÃO
-           ============================================================ */
         .btn-login {
             width: 100%;
             padding: clamp(11px, 1.8vh, 15px);
@@ -300,9 +279,6 @@
             margin-right: 8px;
         }
         
-        /* ============================================================
-           LINK DE REGISTRO
-           ============================================================ */
         .register-link {
             text-align: center;
             color: rgba(255,255,255,0.35);
@@ -328,9 +304,6 @@
             margin-right: 6px;
         }
         
-        /* ============================================================
-           MENSAGENS DE ALERTA
-           ============================================================ */
         .alert {
             padding: clamp(8px, 1.2vh, 12px) clamp(10px, 1.5vw, 16px);
             border-radius: clamp(8px, 1.5vh, 10px);
@@ -364,9 +337,6 @@
             color: #2196f3;
         }
 
-        /* ============================================================
-           ORIENTAÇÃO PAISAGEM (Landscape)
-           ============================================================ */
         @media (max-height: 500px) and (orientation: landscape) {
             body {
                 padding: 6px 16px;
@@ -465,9 +435,6 @@
             }
         }
 
-        /* ============================================================
-           TELAS MUITO PEQUENAS (ATÉ 360px)
-           ============================================================ */
         @media (max-width: 360px) {
             body {
                 padding: 6px;
@@ -511,9 +478,6 @@
             }
         }
 
-        /* ============================================================
-           PREFERE DARK MODE
-           ============================================================ */
         @media (prefers-color-scheme: dark) {
             body {
                 background: linear-gradient(135deg, #0a0a1a, #1a1a2e, #0f0c29);
@@ -525,31 +489,14 @@
     <div class="login-container">
         <div class="login-header">
             <div class="logo-igreja">
-                <div class="cross-icon">
-                    @php
-                        $logoPath = public_path('imagens/logo-branco.png');
-                        $logoUrl = file_exists($logoPath) ? asset('imagens/logo-branco.png') : null;
-                    @endphp
-                    
-                    @if($logoUrl)
-                        <img src="{{ $logoUrl }}" 
-                             alt="Logo ADTC2 MARANGUAPE"
-                             loading="lazy"
-                             onerror="this.style.display='none'; this.parentElement.querySelector('.logo-fallback').style.display='flex';">
-                    @endif
-                    <div class="logo-fallback" style="{{ $logoUrl ? 'display: none;' : 'display: flex;' }}">
-                        <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="17" y="2" width="16" height="46" rx="3" fill="url(#goldGrad)"/>
-                            <rect x="2" y="17" width="46" height="16" rx="3" fill="url(#goldGrad)"/>
-                            <defs>
-                                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#f2d680"/>
-                                    <stop offset="50%" stop-color="#d4af37"/>
-                                    <stop offset="100%" stop-color="#b8960f"/>
-                                </linearGradient>
-                            </defs>
-                        </svg>
-                    </div>
+                <div class="cross-icon" id="logoContainer">
+                    <!-- ⭐ USANDO URL() EM VEZ DE ASSET() PARA EVITAR PROBLEMAS COM HTTPS -->
+                    <img id="logoImg"
+                         src="{{ url('imagens/logo-branco.png') }}"
+                         alt="Logo ADTC2 MARANGUAPE"
+                         loading="lazy"
+                         onerror="this.onerror=null; this.src='{{ url('imagens/logo-branco.svg') }}';"
+                         onerror="this.style.display='none'; document.getElementById('logoContainer').innerHTML='<span class=\'fallback-icon\'>✝</span>';">
                 </div>
                 <div class="logo-texto">
                     <div class="logo-nome">ADTC2 MARANGUAPE</div>
@@ -560,7 +507,7 @@
             <p class="slogan">Conecte-se com sua comunidade</p>
         </div>
 
-        <!-- ⭐ MENSAGENS DE SESSÃO -->
+        <!-- MENSAGENS DE SESSÃO -->
         @if(session('error'))
             <div class="alert alert-error">
                 <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
@@ -579,7 +526,7 @@
             </div>
         @endif
 
-        <!-- ⭐ ERROS DE VALIDAÇÃO DO LARAVEL -->
+        <!-- ERROS DE VALIDAÇÃO DO LARAVEL -->
         @if($errors->any())
             <div class="alert alert-error">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -622,7 +569,7 @@
                 @enderror
             </div>
 
-            <!-- ⭐ CAMPO LEMBRAR-ME -->
+            <!-- CAMPO LEMBRAR-ME -->
             <div class="remember-group">
                 <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
                 <label for="remember">Lembrar-me</label>

@@ -660,7 +660,6 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 Busca Avançada de Membros');
 
     // Auto-submit ao mudar o limit
     document.getElementById('limit')?.addEventListener('change', function() {

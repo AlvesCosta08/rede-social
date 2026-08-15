@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
+use App\Models\Membro; // ⭐ ADICIONADO
 
 class CheckPermission
 {
@@ -37,10 +38,10 @@ class CheckPermission
         if ($request->route('membro')) {
             $membro = $request->route('membro');
         } elseif ($request->route('matricula')) {
-            $membro = \App\Models\Filiado::where('matricula', $request->route('matricula'))->first();
+            $membro = Membro::where('matricula', $request->route('matricula'))->first(); // ⭐ MUDADO de Filiado para Membro
         }
 
-        // Verifica a permissão usando o método do User
+        // Verifica a permissão usando o método do Membro // ⭐ CORRIGIDO comentário
         if (!$user->pode($permission, $membro)) {
             Log::warning('Permissão negada', [
                 'user' => $user->matricula,

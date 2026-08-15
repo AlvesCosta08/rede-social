@@ -3,13 +3,24 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\DTOs\Auth\LoginDTO;
+use App\Http\Resources\Auth\LoginResource;
+use App\Models\Membro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Routing\Attributes\Controllers\Middleware;
+use Illuminate\Routing\Attributes\Controllers\Throttle;
 
+/**
+ * Controlador de Autenticação - Laravel 13
+ * 
+ * @see https://laravel.com/docs/13.x/controllers#attributes
+ */
+#[Middleware('guest')]
+#[Throttle(10, 1)] // 10 tentativas por minuto
 class LoginController extends Controller
 {
     /**
@@ -62,15 +73,15 @@ class LoginController extends Controller
                 'password.min' => 'A senha deve ter no mínimo 8 caracteres.'
             ]);
 
-            $matricula = $request->matricula;
-            $password = $request->password;
+            // ⭐ CRIAR DTO
+            $loginDTO = LoginDTO::fromRequest($request->all());
 
             // 🔍 Buscar no banco novo
-            $user = User::where('matricula', $matricula)->first();
+            $user = Membro::where('matricula', $loginDTO->matricula)->first();
 
             if (!$user) {
                 Log::channel('auth')->warning('⚠️ MATRÍCULA NÃO ENCONTRADA', [
-                    'matricula' => $matricula,
+                    'matricula' => $loginDTO->matricula,
                     'ip' => $request->ip()
                 ]);
 
@@ -78,9 +89,9 @@ class LoginController extends Controller
             }
 
             // 🔐 VERIFICAR SENHA
-            if (!Hash::check($password, $user->password)) {
+            if (!Hash::check($loginDTO->password, $user->password)) {
                 Log::channel('auth')->warning('⚠️ SENHA INCORRETA', [
-                    'matricula' => $matricula,
+                    'matricula' => $loginDTO->matricula,
                     'ip' => $request->ip()
                 ]);
 
@@ -90,9 +101,9 @@ class LoginController extends Controller
             }
 
             // 🔐 VERIFICAR STATUS
-            if (!in_array(strtolower($user->status), ['ativo', 'membro'])) {
+            if (!$user->isAtivo()) {
                 Log::channel('auth')->warning('⚠️ CONTA INATIVA', [
-                    'matricula' => $matricula,
+                    'matricula' => $loginDTO->matricula,
                     'status' => $user->status,
                     'ip' => $request->ip()
                 ]);
@@ -104,10 +115,10 @@ class LoginController extends Controller
             if (empty($user->nivel)) {
                 // Se for admin pelo campo antigo, define como admin
                 if ($user->admin === true || $user->admin === 1) {
-                    $user->nivel = User::NIVEL_ADMIN;
+                    $user->nivel = Membro::NIVEL_ADMIN;
                 } else {
                     // Por padrão, usuário comum
-                    $user->nivel = User::NIVEL_USUARIO;
+                    $user->nivel = Membro::NIVEL_USUARIO;
                 }
                 $user->save();
                 
@@ -119,7 +130,7 @@ class LoginController extends Controller
             }
 
             // ✅ FAZER LOGIN COM LARAVEL AUTH
-            Auth::login($user, $request->has('remember'));
+            Auth::login($user, $loginDTO->remember);
 
             // ✅ MANTER COMPATIBILIDADE COM CÓDIGO EXISTENTE
             session([

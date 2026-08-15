@@ -79,18 +79,15 @@ class MembroService
      */
     public function deletarMembro(string $matricula, string $adminMatricula): bool
     {
-        // Não pode deletar o próprio admin
         if ($matricula === $adminMatricula) {
             throw new \Exception('Você não pode deletar sua própria conta.');
         }
 
-        // Verifica se o membro existe
         $membro = $this->membroRepository->findById($matricula);
         if (!$membro) {
             throw new \Exception('Membro não encontrado.');
         }
 
-        // Remove foto se existir
         if ($membro->foto) {
             $this->removerFoto($membro->foto);
         }

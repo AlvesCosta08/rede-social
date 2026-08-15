@@ -503,7 +503,7 @@
         </div>
 
         <div class="profile-actions">
-            <a href="{{ route('membro.cartao', $perfil->matricula) }}" class="btn btn-primary">
+            <a href="{{ route('cartao.show', $perfil->matricula) }}" class="btn btn-primary">
                 <i class="fas fa-id-card"></i> Ver Cartão
             </a>
             
@@ -676,7 +676,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Resposta do upload:', data);
             
             if (data.success) {
                 mostrarToast('Foto atualizada com sucesso! ✅', 'success');
@@ -686,7 +685,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (window.FotoEvent) {
                         window.FotoEvent.atualizada(data.foto_url);
-                        console.log('📸 Evento global de atualização de foto disparado');
                     } else if (window.atualizarTodasFotos) {
                         window.atualizarTodasFotos(data.foto_url);
                     }
@@ -742,7 +740,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (window.FotoEvent) {
                     window.FotoEvent.removida();
-                    console.log('🗑️ Evento global de remoção de foto disparado');
                 } else if (window.removerTodasFotos) {
                     window.removerTodasFotos();
                 }
@@ -758,8 +755,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    console.log('🖼️ Sistema de upload de foto carregado');
-    console.log('💡 Dê duplo clique na foto para removê-la');
     @endif
 
     @if(session('success'))

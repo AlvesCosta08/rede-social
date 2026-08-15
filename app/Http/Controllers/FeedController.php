@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Membro;
 use App\Models\Publicacao;
 use App\Models\Comentario;
 use App\Models\Curtida;
+use App\DTOs\Feed\FeedDTO;
+use App\DTOs\Publicacao\CreatePublicacaoDTO;
+use App\Http\Resources\Feed\FeedResource;
+use App\Http\Resources\Publicacao\PublicacaoResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -142,13 +146,13 @@ class FeedController extends Controller
         }
 
         try {
-            $publicacao = Publicacao::on('mysql')->create([
+            // ⭐ CRIAR DTO
+            $createDTO = CreatePublicacaoDTO::fromRequest([
                 'filiado_matricula' => $user->matricula,
-                'conteudo' => $request->conteudo,
-                'created_at' => now(),
-                'updated_at' => now()
+                'conteudo' => $request->conteudo
             ]);
 
+            $publicacao = Publicacao::on('mysql')->create($createDTO->toArray());
             $publicacao->load('autor');
 
             Log::info('📝 Nova publicação criada', [
@@ -159,14 +163,7 @@ class FeedController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Publicação criada com sucesso!',
-                'id' => $publicacao->id,
-                'conteudo' => $publicacao->conteudo,
-                'autor_nome' => $publicacao->autor->nome ?? 'Usuário',
-                'autor_matricula' => $publicacao->autor->matricula ?? $user->matricula,
-                'autor_foto' => $publicacao->autor->foto ?? null,
-                'autor_funcao' => $publicacao->autor->funcao ?? 'Membro',
-                'autor_inicial' => substr($publicacao->autor->nome ?? 'U', 0, 1),
-                'created_at' => $publicacao->created_at->diffForHumans()
+                'data' => (new PublicacaoResource($publicacao))->toArray($request)
             ]);
 
         } catch (\Exception $e) {
@@ -447,7 +444,7 @@ class FeedController extends Controller
         }
 
         try {
-            $membro = User::on('mysql')->findOrFail($matricula);
+            $membro = Membro::on('mysql')->findOrFail($matricula);
 
             if ($user->matricula === $membro->matricula) {
                 return response()->json([

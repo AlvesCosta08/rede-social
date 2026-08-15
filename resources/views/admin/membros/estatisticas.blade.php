@@ -560,13 +560,6 @@
 
 @push('scripts')
 <script>
-    console.log('📊 Página de estatísticas carregada');
-    console.log('📈 Total de membros: {{ $stats['total'] ?? 0 }}');
-    console.log('✅ Ativos: {{ $stats['ativos'] ?? 0 }}');
-    console.log('❌ Inativos: {{ $stats['inativos'] ?? 0 }}');
-    console.log('🔄 Transferidos: {{ $stats['transferidos'] ?? 0 }}');
-    console.log('🚪 Saída: {{ $stats['saida'] ?? 0 }}');
-    console.log('🎂 Aniversariantes: {{ $aniversariantes->count() }}');
 
     // Animar barras ao carregar
     document.addEventListener('DOMContentLoaded', function() {

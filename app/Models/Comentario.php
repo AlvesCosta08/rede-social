@@ -38,7 +38,7 @@ class Comentario extends Model
 
     public function autor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'filiado_matricula', 'matricula');
+        return $this->belongsTo(Membro::class, 'filiado_matricula', 'matricula');
     }
 
     // ============================================================

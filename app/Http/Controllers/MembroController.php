@@ -2,22 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Filiado;
+use App\Http\Controllers\Controller;
+use App\Models\Membro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class MembroController extends Controller
 {
     /**
-     * Listar membros com busca
+     * Listar membros ativos (usuário comum)
      */
     public function index(Request $request)
     {
-        $query = Filiado::on('mysql')->where('status', 'ativo');
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Faça login para continuar.');
+        }
 
-        // Busca por nome, matrícula, email, cidade
+        $query = Membro::on('mysql')->where('status', 'ativo');
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -29,22 +34,18 @@ class MembroController extends Controller
             });
         }
 
-        // Filtro por função
         if ($request->filled('funcao')) {
             $query->where('funcao', $request->funcao);
         }
 
-        // Filtro por cidade
         if ($request->filled('cidade')) {
             $query->where('cidade', 'LIKE', "%{$request->cidade}%");
         }
 
-        // Filtro por congregação
         if ($request->filled('congregacao')) {
             $query->where('congregacao', 'LIKE', "%{$request->congregacao}%");
         }
 
-        // Ordenação
         $ordenar = $request->get('ordenar', 'nome');
         $direcao = $request->get('direcao', 'asc');
         
@@ -56,22 +57,21 @@ class MembroController extends Controller
 
         $membros = $query->paginate(20)->withQueryString();
 
-        // Buscar funções disponíveis para filtro
-        $funcoes = Filiado::on('mysql')
+        $funcoes = Membro::on('mysql')
             ->where('status', 'ativo')
             ->whereNotNull('funcao')
             ->distinct()
             ->pluck('funcao')
             ->sort();
 
-        $cidades = Filiado::on('mysql')
+        $cidades = Membro::on('mysql')
             ->where('status', 'ativo')
             ->whereNotNull('cidade')
             ->distinct()
             ->pluck('cidade')
             ->sort();
 
-        $congregacoes = Filiado::on('mysql')
+        $congregacoes = Membro::on('mysql')
             ->where('status', 'ativo')
             ->whereNotNull('congregacao')
             ->distinct()
@@ -86,13 +86,19 @@ class MembroController extends Controller
      */
     public function buscar(Request $request)
     {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Não autenticado.'], 401);
+        }
+
         $request->validate([
             'termo' => 'required|string|min:2'
         ]);
 
         $termo = $request->termo;
         
-        $membros = Filiado::on('mysql')
+        $membros = Membro::on('mysql')
             ->where('status', 'ativo')
             ->where(function($q) use ($termo) {
                 $q->where('nome', 'LIKE', "%{$termo}%")
@@ -113,7 +119,7 @@ class MembroController extends Controller
                     'foto_url' => $membro->foto_url,
                     'funcao' => $membro->funcao ?? 'Membro',
                     'cidade' => $membro->cidade,
-                    'url' => route('perfil.show', $membro->matricula)
+                    'url' => route('membros.show', $membro->matricula)
                 ];
             })
         ]);
@@ -124,13 +130,19 @@ class MembroController extends Controller
      */
     public function autocomplete(Request $request)
     {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([]);
+        }
+
         $termo = $request->get('q', '');
         
         if (strlen($termo) < 2) {
             return response()->json([]);
         }
 
-        $membros = Filiado::on('mysql')
+        $membros = Membro::on('mysql')
             ->where('status', 'ativo')
             ->where(function($q) use ($termo) {
                 $q->where('nome', 'LIKE', "%{$termo}%")
@@ -167,20 +179,17 @@ class MembroController extends Controller
 
     /**
      * Mostrar carteira digital de um membro específico
-     * ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
      */
     public function cartao($matricula)
     {
-        $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
-        
         $user = Auth::user();
         
-        // ⭐ VERIFICA PERMISSÃO: só o próprio membro, secretário da congregação ou admin pode ver
         if (!$user) {
-            abort(403, 'Faça login para ver esta carteira.');
+            return redirect()->route('login')->with('error', 'Faça login para continuar.');
         }
 
-        // Verifica permissão usando o método pode()
+        $membro = Membro::on('mysql')->where('matricula', $matricula)->firstOrFail();
+        
         if (!$user->pode('ver_membro', $membro) && $user->matricula !== $membro->matricula) {
             abort(403, 'Você não tem permissão para ver esta carteira.');
         }
@@ -193,6 +202,12 @@ class MembroController extends Controller
      */
     public function buscarPorProximidade(Request $request)
     {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Não autenticado.'], 401);
+        }
+
         $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
@@ -203,7 +218,7 @@ class MembroController extends Controller
         $longitude = $request->longitude;
         $raio = $request->get('raio', 10);
 
-        $membros = Filiado::on('mysql')
+        $membros = Membro::on('mysql')
             ->where('status', 'ativo')
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
@@ -238,7 +253,7 @@ class MembroController extends Controller
                     'funcao' => $membro->funcao ?? 'Membro',
                     'cidade' => $membro->cidade,
                     'distancia' => round($membro->distancia, 2) . ' km',
-                    'url' => route('perfil.show', $membro->matricula)
+                    'url' => route('membros.show', $membro->matricula)
                 ];
             })
         ]);
@@ -252,7 +267,7 @@ class MembroController extends Controller
         $user = Auth::user();
         
         if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Usuário não autenticado.'], 401);
+            return response()->json(['success' => false, 'message' => 'Não autenticado.'], 401);
         }
 
         $request->validate([
@@ -297,13 +312,13 @@ class MembroController extends Controller
         $user = Auth::user();
         
         if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Usuário não autenticado.'], 401);
+            return response()->json(['success' => false, 'message' => 'Não autenticado.'], 401);
         }
 
         $seguindo = $user->seguindo()->pluck('matricula')->toArray();
         $seguindo[] = $user->matricula;
 
-        $sugestoes = Filiado::on('mysql')
+        $sugestoes = Membro::on('mysql')
             ->where('status', 'ativo')
             ->whereNotIn('matricula', $seguindo)
             ->inRandomOrder()
@@ -319,154 +334,33 @@ class MembroController extends Controller
                     'foto_url' => $membro->foto_url,
                     'funcao' => $membro->funcao ?? 'Membro',
                     'cidade' => $membro->cidade,
-                    'url' => route('perfil.show', $membro->matricula)
+                    'url' => route('membros.show', $membro->matricula)
                 ];
             })
         ]);
     }
 
     /**
-     * Estatísticas de membros
-     */
-    public function estatisticas()
-    {
-        $total = Filiado::on('mysql')->count();
-        $ativos = Filiado::on('mysql')->where('status', 'ativo')->count();
-        $inativos = Filiado::on('mysql')->where('status', 'inativo')->count();
-        
-        $porFuncao = Filiado::on('mysql')
-            ->where('status', 'ativo')
-            ->selectRaw('funcao, count(*) as total')
-            ->groupBy('funcao')
-            ->orderBy('total', 'desc')
-            ->get();
-
-        $porCidade = Filiado::on('mysql')
-            ->where('status', 'ativo')
-            ->selectRaw('cidade, count(*) as total')
-            ->whereNotNull('cidade')
-            ->groupBy('cidade')
-            ->orderBy('total', 'desc')
-            ->limit(10)
-            ->get();
-
-        $porCongregacao = Filiado::on('mysql')
-            ->where('status', 'ativo')
-            ->selectRaw('congregacao, count(*) as total')
-            ->whereNotNull('congregacao')
-            ->groupBy('congregacao')
-            ->orderBy('total', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'estatisticas' => [
-                'total' => $total,
-                'ativos' => $ativos,
-                'inativos' => $inativos,
-                'por_funcao' => $porFuncao,
-                'por_cidade' => $porCidade,
-                'por_congregacao' => $porCongregacao
-            ]
-        ]);
-    }
-
-    /**
-     * Exportar membros (CSV)
-     * ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
-     */
-    public function exportar(Request $request)
-    {
-        $user = Auth::user();
-        
-        // ⭐ VERIFICA PERMISSÃO PARA EXPORTAR
-        if (!$user || !$user->pode('exportar_membros')) {
-            Log::warning('⚠️ Tentativa de exportação sem permissão', [
-                'matricula' => $user?->matricula,
-                'ip' => request()->ip()
-            ]);
-            abort(403, 'Você não tem permissão para exportar dados.');
-        }
-
-        $query = Filiado::on('mysql')->where('status', 'ativo');
-
-        if ($request->filled('funcao')) {
-            $query->where('funcao', $request->funcao);
-        }
-
-        if ($request->filled('cidade')) {
-            $query->where('cidade', 'LIKE', "%{$request->cidade}%");
-        }
-
-        $membros = $query->orderBy('nome')->get();
-
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="membros_' . date('Y-m-d') . '.csv"',
-        ];
-
-        $callback = function() use ($membros) {
-            $file = fopen('php://output', 'w');
-            
-            fputcsv($file, [
-                'Matrícula', 
-                'Nome', 
-                'Função', 
-                'Email', 
-                'Telefone',
-                'Cidade',
-                'UF',
-                'Congregação',
-                'Status',
-                'Data Nascimento',
-                'Data Cadastro'
-            ]);
-
-            foreach ($membros as $membro) {
-                fputcsv($file, [
-                    $membro->matricula,
-                    $membro->nome,
-                    $membro->funcao ?? 'Membro',
-                    $membro->email ?? '',
-                    $membro->telefone ?? '',
-                    $membro->cidade ?? '',
-                    $membro->uf ?? '',
-                    $membro->congregacao ?? '',
-                    $membro->status ?? 'ativo',
-                    $membro->dataNascimento?->format('d/m/Y') ?? '',
-                    $membro->datCadastro?->format('d/m/Y') ?? ''
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        Log::info('📊 Exportação de membros realizada', [
-            'matricula' => $user->matricula,
-            'total' => $membros->count()
-        ]);
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    /**
-     * Mostrar perfil de um membro (show)
+     * Mostrar perfil de um membro
      */
     public function show($matricula)
     {
-        $membro = Filiado::on('mysql')
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Faça login para continuar.');
+        }
+
+        $membro = Membro::on('mysql')
             ->with(['publicacoes' => function($query) {
                 $query->orderBy('created_at', 'desc')->limit(10);
             }])
             ->where('matricula', $matricula)
             ->firstOrFail();
 
-        $user = Auth::user();
+        $podeVerPrivado = $user->matricula === $membro->matricula || $user->pode('ver_membro', $membro);
         
-        // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
-        $podeVerPrivado = $user && ($user->matricula === $membro->matricula || $user->pode('ver_membro', $membro));
-        
-        if (!$podeVerPrivado && !$membro->privacidade) {
+        if (!$podeVerPrivado && $membro->privacidade) {
             $membro->makeHidden(['email', 'telefone', 'documento', 'endereco']);
         }
 

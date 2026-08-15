@@ -14,7 +14,6 @@
         margin: 0 auto;
     }
 
-    /* ===== CARD DO PERFIL ===== */
     .perfil-card {
         background: var(--bg-card);
         border-radius: var(--radius-lg);
@@ -28,7 +27,6 @@
         box-shadow: var(--shadow-hover);
     }
 
-    /* ===== HEADER COM COVER ===== */
     .perfil-header {
         background: linear-gradient(135deg, var(--primary), var(--primary-light));
         padding: 30px 30px 0 30px;
@@ -59,6 +57,7 @@
         justify-content: center;
         font-size: 0.8rem;
         backdrop-filter: blur(4px);
+        text-decoration: none;
     }
 
     .perfil-header .perfil-actions-top .icon-btn:hover {
@@ -74,7 +73,6 @@
         background: rgba(241, 196, 15, 0.6);
     }
 
-    /* ===== AVATAR ===== */
     .perfil-avatar-wrapper {
         display: flex;
         align-items: flex-end;
@@ -165,7 +163,6 @@
         color: var(--primary);
     }
 
-    /* ===== STATUS BADGE ===== */
     .status-badge-modern {
         display: inline-flex;
         align-items: center;
@@ -197,12 +194,10 @@
     .status-transferido .dot { background: #2196F3; }
     .status-transferido { background: #e3f2fd; color: #0d47a1; }
 
-    /* ===== BODY ===== */
     .perfil-body {
         padding: 20px 30px 30px 30px;
     }
 
-    /* ===== INFO GRID ===== */
     .info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -241,17 +236,6 @@
         color: var(--text);
     }
 
-    .info-item .value .badge-funcao-small {
-        font-size: 0.75rem;
-        padding: 2px 12px;
-        border-radius: 12px;
-        background: var(--primary);
-        color: white;
-    }
-
-    /* ============================================================
-       AÇÕES - ÍCONES MODERNOS (ESTILO REDE SOCIAL)
-       ============================================================ */
     .perfil-actions {
         display: flex;
         gap: 6px;
@@ -316,30 +300,6 @@
         border-color: #dc3545;
     }
 
-    .perfil-actions .action-btn.danger:hover i {
-        color: white;
-    }
-
-    .perfil-actions .action-btn.warning {
-        color: #ffc107;
-    }
-
-    .perfil-actions .action-btn.warning:hover {
-        background: #ffc107;
-        color: #1a1a2e;
-        border-color: #ffc107;
-    }
-
-    .perfil-actions .action-btn.success {
-        color: #28a745;
-    }
-
-    .perfil-actions .action-btn.success:hover {
-        background: #28a745;
-        color: white;
-        border-color: #28a745;
-    }
-
     .perfil-actions .action-btn.info {
         color: #17a2b8;
     }
@@ -348,16 +308,6 @@
         background: #17a2b8;
         color: white;
         border-color: #17a2b8;
-    }
-
-    .perfil-actions .action-btn.purple {
-        color: #6f42c1;
-    }
-
-    .perfil-actions .action-btn.purple:hover {
-        background: #6f42c1;
-        color: white;
-        border-color: #6f42c1;
     }
 
     .perfil-actions .action-btn.whatsapp {
@@ -376,123 +326,73 @@
         border-color: #4CAF50;
     }
 
-    .perfil-actions .action-btn.curtido:hover {
-        background: #388E3C;
-        border-color: #388E3C;
-    }
-
     .perfil-actions .action-btn.seguindo {
         background: #6c757d;
         color: white;
         border-color: #6c757d;
     }
 
-    .perfil-actions .action-btn.seguindo:hover {
-        background: #5a6268;
-        border-color: #5a6268;
+    /* ===== TOAST ===== */
+    .toast-custom {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        z-index: 9999;
+        backdrop-filter: blur(10px);
+        animation: fadeInUp 0.4s ease;
+        display: none;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        max-width: 90%;
+        text-align: center;
     }
 
-    /* ============================================================
-       RESPONSIVO
-       ============================================================ */
+    .toast-custom i { margin-right: 8px; }
+    .toast-custom.success { border-color: #4CAF50; }
+    .toast-custom.success i { color: #4CAF50; }
+    .toast-custom.error { border-color: #f44336; }
+    .toast-custom.error i { color: #f44336; }
+    .toast-custom.info { border-color: #2196F3; }
+    .toast-custom.info i { color: #2196F3; }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ===== RESPONSIVO ===== */
     @media (max-width: 768px) {
-        .perfil-header {
-            padding: 20px 20px 0 20px;
-            min-height: 80px;
-        }
-
-        .perfil-avatar-wrapper {
-            margin-top: -40px;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-
-        .perfil-avatar {
-            width: 90px;
-            height: 90px;
-            font-size: 36px;
-        }
-
-        .perfil-info .perfil-nome {
-            font-size: 1.2rem;
-        }
-
-        .perfil-body {
-            padding: 16px 20px 20px 20px;
-        }
-
-        .info-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 12px 20px;
-        }
-
-        .info-item {
-            padding: 6px 0;
-        }
-
-        .info-item .value {
-            font-size: 0.8rem;
-        }
-
-        .perfil-actions {
-            gap: 4px;
-        }
-
-        .perfil-actions .action-btn {
-            padding: 6px 12px;
-            font-size: 0.65rem;
-        }
-
-        .perfil-actions .action-btn i {
-            font-size: 0.85rem;
-        }
-
-        .perfil-actions .action-btn .btn-text {
-            display: none;
-        }
-
-        .perfil-header .perfil-actions-top .icon-btn {
-            width: 28px;
-            height: 28px;
-            font-size: 0.7rem;
-        }
+        .perfil-header { padding: 20px 20px 0 20px; min-height: 80px; }
+        .perfil-avatar-wrapper { margin-top: -40px; gap: 14px; flex-wrap: wrap; }
+        .perfil-avatar { width: 90px; height: 90px; font-size: 36px; }
+        .perfil-info .perfil-nome { font-size: 1.2rem; }
+        .perfil-body { padding: 16px 20px 20px 20px; }
+        .info-grid { grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+        .info-item { padding: 6px 0; }
+        .info-item .value { font-size: 0.8rem; }
+        .perfil-actions { gap: 4px; }
+        .perfil-actions .action-btn { padding: 6px 12px; font-size: 0.65rem; }
+        .perfil-actions .action-btn i { font-size: 0.85rem; }
+        .perfil-actions .action-btn .btn-text { display: none; }
+        .perfil-header .perfil-actions-top .icon-btn { width: 28px; height: 28px; font-size: 0.7rem; }
     }
 
     @media (max-width: 480px) {
-        .info-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .perfil-avatar-wrapper {
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
-        .perfil-info .perfil-nome {
-            justify-content: center;
-        }
-
-        .perfil-info .perfil-local {
-            justify-content: center;
-        }
-
-        .perfil-actions {
-            justify-content: center;
-        }
-
-        .perfil-actions .action-btn {
-            padding: 8px 14px;
-        }
-
-        .perfil-actions .action-btn .btn-text {
-            display: inline;
-        }
+        .info-grid { grid-template-columns: 1fr; }
+        .perfil-avatar-wrapper { flex-direction: column; align-items: center; text-align: center; }
+        .perfil-info .perfil-nome { justify-content: center; }
+        .perfil-info .perfil-local { justify-content: center; }
+        .perfil-actions { justify-content: center; }
+        .perfil-actions .action-btn { padding: 8px 14px; }
+        .perfil-actions .action-btn .btn-text { display: inline; }
     }
 
-    /* ============================================================
-       DARK MODE AJUSTES
-       ============================================================ */
     body.dark .perfil-actions .action-btn {
         background: var(--bg-card);
         color: var(--text-secondary);
@@ -509,42 +409,26 @@
         color: white;
     }
 
-    body.dark .perfil-actions .action-btn.primary:hover {
-        background: var(--primary-dark);
-    }
-
     body.dark .status-ativo { background: #1b3a1b; color: #66bb6a; }
     body.dark .status-inativo { background: #3a1b1b; color: #ef5350; }
     body.dark .status-pendente { background: #3a2a1b; color: #ffa726; }
     body.dark .status-transferido { background: #1b2a3a; color: #42a5f5; }
-
-    body.dark .perfil-header .perfil-actions-top .icon-btn {
-        background: rgba(0,0,0,0.3);
-    }
-
-    body.dark .perfil-header .perfil-actions-top .icon-btn:hover {
-        background: rgba(255,255,255,0.2);
-    }
 </style>
 @endsection
 
 @section('content')
 <div class="perfil-container">
-    <!-- CARD DO PERFIL -->
     <div class="perfil-card">
         
-        <!-- ===== HEADER ===== -->
+        <!-- HEADER -->
         <div class="perfil-header">
-            <!-- Ações do Topo -->
             <div class="perfil-actions-top">
-                <!-- ⭐ IMPRIMIR - VERIFICA PERMISSÃO -->
                 @if(Auth::check() && Auth::user()->pode('editar_membro', $membro))
                     <button class="icon-btn" onclick="window.print()" title="Imprimir">
                         <i class="fas fa-print"></i>
                     </button>
                 @endif
                 
-                <!-- ⭐ EDITAR - VERIFICA PERMISSÃO -->
                 @if(Auth::check() && Auth::user()->pode('editar_membro', $membro))
                     <a href="{{ route('admin.membros.edit', $membro->matricula) }}" 
                        class="icon-btn warning" title="Editar">
@@ -552,13 +436,9 @@
                     </a>
                 @endif
                 
-                <!-- ⭐ EXCLUIR - VERIFICA PERMISSÃO -->
                 @if(Auth::check() && Auth::user()->pode('excluir_membro'))
                     <button class="icon-btn danger" 
-                            data-matricula="{{ $membro->matricula }}"
-                            data-nome="{{ addslashes($membro->nome) }}"
-                            data-url="{{ route('admin.membros.destroy', $membro->matricula) }}"
-                            onclick="excluirMembro(this)" 
+                            onclick="excluirMembro('{{ $membro->matricula }}', '{{ addslashes($membro->nome) }}')" 
                             title="Excluir">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -566,10 +446,9 @@
             </div>
         </div>
 
-        <!-- ===== AVATAR E INFO ===== -->
+        <!-- AVATAR E INFO -->
         <div class="perfil-body">
             <div class="perfil-avatar-wrapper">
-                <!-- Avatar -->
                 <div class="perfil-avatar">
                     @php
                         $fotoNome = $membro->foto ?? null;
@@ -587,7 +466,6 @@
                     <span class="status-dot"></span>
                 </div>
 
-                <!-- Informações -->
                 <div class="perfil-info">
                     <div class="perfil-nome">
                         {{ $membro->nome ?? 'N/A' }}
@@ -612,7 +490,7 @@
                 </div>
             </div>
 
-            <!-- ===== INFO GRID ===== -->
+            <!-- INFO GRID -->
             <div class="info-grid">
                 <div>
                     <div class="info-item">
@@ -663,40 +541,38 @@
                 </div>
             </div>
 
-            <!-- ============================================================
-            AÇÕES - ÍCONES MODERNOS (ESTILO REDE SOCIAL)
-            ============================================================ -->
+            <!-- AÇÕES -->
             <div class="perfil-actions">
                 <a href="{{ route('membros.index') }}" class="action-btn" title="Voltar">
                     <i class="fas fa-arrow-left"></i>
                     <span class="btn-text">Voltar</span>
                 </a>
 
-                <a href="{{ route('membro.cartao', $membro->matricula) }}" class="action-btn info" target="_blank" title="Ver Cartão">
+                <a href="{{ route('cartao.show', $membro->matricula) }}" class="action-btn info" target="_blank" title="Ver Cartão">
                     <i class="fas fa-id-card"></i>
                     <span class="btn-text">Cartão</span>
                 </a>
 
                 @if(Auth::check() && Auth::user()->matricula != $membro->matricula)
-                    <button class="action-btn" id="btnCurtir" title="Curtir">
+                    <button class="action-btn" onclick="curtir(this)" title="Curtir">
                         <i class="fas fa-heart" id="curtirIcon"></i>
                         <span class="btn-text" id="curtirText">Curtir</span>
                     </button>
                 @endif
 
                 @if(Auth::check() && Auth::user()->matricula != $membro->matricula)
-                    <button class="action-btn success" id="btnSeguir" title="Seguir">
+                    <button class="action-btn success" onclick="seguir(this)" title="Seguir">
                         <i class="fas fa-user-plus" id="seguirIcon"></i>
                         <span class="btn-text" id="seguirText">Seguir</span>
                     </button>
                 @endif
 
-                <button class="action-btn primary" id="btnCompartilhar" title="Compartilhar">
+                <button class="action-btn primary" onclick="compartilhar()" title="Compartilhar">
                     <i class="fas fa-share-alt"></i>
                     <span class="btn-text">Compartilhar</span>
                 </button>
 
-                <button class="action-btn whatsapp" id="btnWhatsApp" title="WhatsApp">
+                <button class="action-btn whatsapp" onclick="whatsapp()" title="WhatsApp">
                     <i class="fab fa-whatsapp"></i>
                     <span class="btn-text">WhatsApp</span>
                 </button>
@@ -705,8 +581,13 @@
     </div>
 </div>
 
-<!-- ⭐ MODAL DE EXCLUSÃO - VERIFICA PERMISSÃO -->
-@if(Auth::check() && Auth::user()->pode('excluir_membro'))
+<!-- TOAST -->
+<div class="toast-custom" id="toastCustom">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMessage">Mensagem</span>
+</div>
+
+<!-- MODAL DE EXCLUSÃO -->
 <div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -732,14 +613,14 @@
         </div>
     </div>
 </div>
-@endif
 
 @push('scripts')
 <script>
-function excluirMembro(elemento) {
-    const matricula = elemento.dataset.matricula;
-    const nome = elemento.dataset.nome;
-    const urlExcluir = elemento.dataset.url;
+// ============================================================
+// FUNÇÃO DE EXCLUSÃO
+// ============================================================
+function excluirMembro(matricula, nome) {
+    const urlExcluir = '{{ route("admin.membros.destroy", ":matricula") }}'.replace(':matricula', matricula);
     
     const modal = new bootstrap.Modal(document.getElementById('modalExcluir'));
     
@@ -761,64 +642,87 @@ document.getElementById('formExcluir')?.addEventListener('submit', function(e) {
     }
 });
 
-// ⭐ CURTIR
-const btnCurtir = document.getElementById('btnCurtir');
-if (btnCurtir) {
-    btnCurtir.addEventListener('click', function() {
-        const icon = document.getElementById('curtirIcon');
-        const text = document.getElementById('curtirText');
-        const isCurtido = this.classList.contains('curtido');
-        
-        if (isCurtido) {
-            this.classList.remove('curtido');
-            icon.className = 'fas fa-heart';
-            text.textContent = 'Curtir';
-            this.style.background = '';
-            this.style.color = '';
-            this.style.borderColor = '';
-            showToast('💔 Você descurtiu este membro!', 'info');
-        } else {
-            this.classList.add('curtido');
-            icon.className = 'fas fa-heart';
-            text.textContent = 'Curtido';
-            this.style.background = '#4CAF50';
-            this.style.color = 'white';
-            this.style.borderColor = '#4CAF50';
-            showToast('❤️ Você curtiu este membro!', 'success');
-        }
-    });
+// ============================================================
+// FUNÇÃO DE TOAST
+// ============================================================
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toastCustom');
+    const messageEl = document.getElementById('toastMessage');
+    const icon = toast.querySelector('i');
+    
+    messageEl.textContent = message;
+    toast.className = 'toast-custom';
+    toast.classList.add(type);
+    
+    if (type === 'success') {
+        icon.className = 'fas fa-check-circle';
+    } else if (type === 'error') {
+        icon.className = 'fas fa-times-circle';
+    } else {
+        icon.className = 'fas fa-info-circle';
+    }
+    
+    toast.style.display = 'block';
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
 }
 
-// ⭐ SEGUIR
-const btnSeguir = document.getElementById('btnSeguir');
-if (btnSeguir) {
-    btnSeguir.addEventListener('click', function() {
-        const icon = document.getElementById('seguirIcon');
-        const text = document.getElementById('seguirText');
-        const isSeguindo = this.classList.contains('seguindo');
-        
-        if (isSeguindo) {
-            this.classList.remove('seguindo');
-            icon.className = 'fas fa-user-plus';
-            text.textContent = 'Seguir';
-            this.style.background = '';
-            this.style.color = '';
-            this.style.borderColor = '';
-            showToast('👋 Você deixou de seguir este membro!', 'info');
-        } else {
-            this.classList.add('seguindo');
-            icon.className = 'fas fa-user-check';
-            text.textContent = 'Seguindo';
-            this.style.background = '#6c757d';
-            this.style.color = 'white';
-            this.style.borderColor = '#6c757d';
-            showToast('👥 Você está seguindo este membro!', 'success');
-        }
-    });
+// ============================================================
+// FUNÇÃO CURTIR
+// ============================================================
+function curtir(elemento) {
+    const isCurtido = elemento.classList.contains('curtido');
+    const icon = elemento.querySelector('i');
+    const text = elemento.querySelector('.btn-text');
+    
+    if (isCurtido) {
+        elemento.classList.remove('curtido');
+        icon.className = 'fas fa-heart';
+        text.textContent = 'Curtir';
+        elemento.style.background = '';
+        elemento.style.color = '';
+        showToast('💔 Você descurtiu este membro!', 'info');
+    } else {
+        elemento.classList.add('curtido');
+        icon.className = 'fas fa-heart';
+        text.textContent = 'Curtido';
+        elemento.style.background = '#4CAF50';
+        elemento.style.color = 'white';
+        showToast('❤️ Você curtiu este membro!', 'success');
+    }
 }
 
-// ⭐ COMPARTILHAR
-document.getElementById('btnCompartilhar')?.addEventListener('click', function() {
+// ============================================================
+// FUNÇÃO SEGUIR
+// ============================================================
+function seguir(elemento) {
+    const isSeguindo = elemento.classList.contains('seguindo');
+    const icon = elemento.querySelector('i');
+    const text = elemento.querySelector('.btn-text');
+    
+    if (isSeguindo) {
+        elemento.classList.remove('seguindo');
+        icon.className = 'fas fa-user-plus';
+        text.textContent = 'Seguir';
+        elemento.style.background = '';
+        elemento.style.color = '';
+        showToast('👋 Você deixou de seguir este membro!', 'info');
+    } else {
+        elemento.classList.add('seguindo');
+        icon.className = 'fas fa-user-check';
+        text.textContent = 'Seguindo';
+        elemento.style.background = '#6c757d';
+        elemento.style.color = 'white';
+        showToast('👥 Você está seguindo este membro!', 'success');
+    }
+}
+
+// ============================================================
+// FUNÇÃO COMPARTILHAR
+// ============================================================
+function compartilhar() {
     const url = window.location.href;
     const nome = '{{ $membro->nome }}';
     
@@ -829,16 +733,34 @@ document.getElementById('btnCompartilhar')?.addEventListener('click', function()
             url: url
         }).catch(() => {});
     } else {
-        navigator.clipboard.writeText(url).then(() => {
-            showToast('📋 Link copiado!', 'success');
-        }).catch(() => {
-            prompt('Copie o link:', url);
-        });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('📋 Link copiado!', 'success');
+            }).catch(() => {
+                fallbackCopy(url);
+            });
+        } else {
+            fallbackCopy(url);
+        }
     }
-});
+}
 
-// ⭐ WHATSAPP
-document.getElementById('btnWhatsApp')?.addEventListener('click', function() {
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+    showToast('📋 Link copiado!', 'success');
+}
+
+// ============================================================
+// FUNÇÃO WHATSAPP
+// ============================================================
+function whatsapp() {
     const nome = '{{ $membro->nome }}';
     const matricula = '{{ $membro->matricula }}';
     const telefone = '{{ $membro->telefone ?? "" }}';
@@ -846,56 +768,11 @@ document.getElementById('btnWhatsApp')?.addEventListener('click', function() {
     
     const url = `https://wa.me/55${telefone.replace(/\D/g, '')}?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
-});
-
-// ⭐ TOAST
-function showToast(message, type = 'info') {
-    const colors = {
-        success: '#4CAF50',
-        info: '#2196F3',
-        warning: '#FF9800',
-        error: '#f44336'
-    };
-    
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: ${colors[type] || '#333'};
-        color: white;
-        padding: 12px 24px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        z-index: 9999;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        animation: fadeInUp 0.4s ease;
-        max-width: 90%;
-        text-align: center;
-    `;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.4s ease';
-        setTimeout(() => toast.remove(), 400);
-    }, 3000);
 }
 
-const styleToast = document.createElement('style');
-styleToast.textContent = `
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-        to { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-`;
-document.head.appendChild(styleToast);
-
-console.log('🕊️ Perfil Moderno carregado');
-console.log('👤 {{ $membro->nome }} ({{ $membro->matricula }})');
+// ============================================================
+// CONSOLE LOG
+// ============================================================
 </script>
 @endpush
 @endsection

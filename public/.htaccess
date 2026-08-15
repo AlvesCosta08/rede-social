@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # ⭐ IMPORTANTE: Base para subdiretório
+    RewriteBase /sistemas/conexao-igreja/
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

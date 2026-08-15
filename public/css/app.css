@@ -1,0 +1,100 @@
+/* ============================================================
+   ESTILOS BASE DO CONEXÃO IGREJA
+   ============================================================ */
+:root {
+    --primary: #6C3CE1;
+    --primary-dark: #5A2FC4;
+    --primary-light: #8B6BE6;
+    --bg: #F0EEF5;
+    --bg-card: #FFFFFF;
+    --text: #1A1A2E;
+    --text-secondary: #6B6B7B;
+    --border: #E8E5F0;
+    --shadow: 0 8px 32px rgba(108, 60, 225, 0.12);
+    --radius: 16px;
+    --radius-sm: 10px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+/* Cards */
+.card-modern {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+.card-modern:hover {
+    box-shadow: 0 12px 48px rgba(108, 60, 225, 0.18);
+    transform: translateY(-2px);
+}
+
+/* Botões */
+.btn-modern {
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-modern-primary {
+    background: linear-gradient(135deg, var(--primary), #5A2FC4);
+    color: white;
+    box-shadow: 0 4px 16px rgba(108, 60, 225, 0.3);
+}
+
+.btn-modern-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(108, 60, 225, 0.4);
+}
+
+.btn-modern-danger {
+    background: linear-gradient(135deg, #E74C3C, #C0392B);
+    color: white;
+}
+
+.btn-modern-outline {
+    background: transparent;
+    color: var(--text);
+    border: 2px solid var(--border);
+}
+
+.btn-modern-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* Utilitários */
+.text-center { text-align: center; }
+.text-muted { color: var(--text-secondary); }
+.mt-20 { margin-top: 20px; }
+.mb-20 { margin-bottom: 20px; }
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+@media (max-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr; }
+}

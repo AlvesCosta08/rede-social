@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Sair da Igreja - Conexão Igreja')
+@section('title', 'Sair da Igreja - ADTC2 MARANGUAPE')
 @section('page-title', '😢 Sair da Igreja')
 @section('page-subtitle', 'Sentimos muito que você esteja saindo')
 
@@ -259,12 +259,12 @@
                     type="text" 
                     name="confirmacao" 
                     id="confirmacao"
-                    placeholder="{{ $user->nome }}" 
+                    placeholder="{{ $user->nome ?? 'Digite seu nome' }}" 
                     required
                     autofocus
                     class="{{ $errors->has('confirmacao') ? 'error' : '' }}"
                 >
-                <span class="help-text">Digite exatamente: <strong>{{ $user->nome }}</strong></span>
+                <span class="help-text">Digite exatamente: <strong>{{ $user->nome ?? 'seu nome' }}</strong></span>
                 @error('confirmacao')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('formSair');
     const input = document.getElementById('confirmacao');
     const btnConfirmar = document.getElementById('btnConfirmar');
-    const nomeCompleto = '{{ $user->nome }}';
+    const nomeCompleto = '{{ $user->nome ?? '' }}';
 
     // ===== VALIDAR NOME EM TEMPO REAL =====
     input.addEventListener('input', function() {
@@ -331,9 +331,6 @@ document.addEventListener('DOMContentLoaded', function() {
         btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
     });
 
-    console.log('😢 Página de saída da igreja carregada');
-    console.log('👤 Usuário: {{ $user->nome }}');
-    console.log('🏷️ Nível: {{ $user->nivel ?? "usuario" }}');
 });
 </script>
 @endpush

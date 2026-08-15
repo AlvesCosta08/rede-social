@@ -35,6 +35,6 @@ class Curtida extends Model
 
     public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'filiado_matricula', 'matricula');
+        return $this->belongsTo(Membro::class, 'filiado_matricula', 'matricula');
     }
 }

@@ -634,8 +634,6 @@
 
 @push('scripts')
 <script>
-    console.log('✏️ Editando membro: {{ $membro->nome }} (Matrícula #{{ $membro->matricula }})');
-    console.log('🏷️ Nível atual: {{ $membro->nivel ?? "usuario" }}');
 
     // Máscara para telefone
     document.getElementById('telefone')?.addEventListener('input', function(e) {
@@ -689,9 +687,7 @@
     });
 
     @if(auth()->user()?->isAdmin())
-        console.log('👑 Usuário ADMIN - campo Nível disponível');
     @elseif(auth()->user()?->isSecretario())
-        console.log('📋 Usuário SECRETÁRIO - campo Congregação bloqueado');
     @endif
 </script>
 @endpush

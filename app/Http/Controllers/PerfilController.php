@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Filiado;
+use App\Models\Membro; // ⭐ MUDADO de Filiado para Membro
 use App\Models\Publicacao;
+use App\DTOs\Membro\UpdateMembroDTO;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,7 +23,7 @@ class PerfilController extends Controller
     public function show($matricula)
     {
         $membroLogado = Auth::user();
-        $perfil = Filiado::on('mysql')
+        $perfil = Membro::on('mysql') // ⭐ MUDADO de Filiado para Membro
             ->with(['publicacoes' => function($query) {
                 $query->orderBy('created_at', 'desc')->limit(10);
             }])
@@ -55,7 +56,7 @@ class PerfilController extends Controller
             return redirect()->route('login')->with('error', 'Sessão expirada.');
         }
 
-        $perfil = Filiado::on('mysql')->where('matricula', $user->matricula)->first();
+        $perfil = Membro::on('mysql')->where('matricula', $user->matricula)->first(); // ⭐ MUDADO de Filiado para Membro
         
         if (!$perfil) {
             Auth::logout();
@@ -69,7 +70,6 @@ class PerfilController extends Controller
     /**
      * Atualizar perfil
      * ⭐ VERIFICA PERMISSÃO ANTES DE ATUALIZAR
-     * ⭐ CORRIGIDO: VALIDAÇÃO DE DATAS E BIO
      */
     public function update(Request $request)
     {
@@ -79,7 +79,7 @@ class PerfilController extends Controller
             return redirect()->route('login')->with('error', 'Sessão expirada.');
         }
 
-        $perfil = Filiado::on('mysql')->where('matricula', $user->matricula)->first();
+        $perfil = Membro::on('mysql')->where('matricula', $user->matricula)->first(); // ⭐ MUDADO de Filiado para Membro
 
         if (!$perfil) {
             return redirect()->route('login')->with('error', 'Membro não encontrado.');
@@ -90,7 +90,7 @@ class PerfilController extends Controller
             abort(403, 'Você não tem permissão para editar este perfil.');
         }
 
-        // ⭐ VALIDAÇÃO CORRIGIDA - DATAS ACEITAM VÁRIOS FORMATOS
+        // ⭐ VALIDAÇÃO
         $rules = [
             'nome' => 'required|string|max:255',
             'nome_carteira' => 'nullable|string|max:100',
@@ -109,7 +109,7 @@ class PerfilController extends Controller
             'data_Consagracao' => 'nullable|date|before_or_equal:today',
             'mae' => 'nullable|string|max:255',
             'pai' => 'nullable|string|max:255',
-            'bio' => 'nullable|string|max:5000', // ⭐ AUMENTADO PARA 5000
+            'bio' => 'nullable|string|max:5000',
             'privacidade' => 'nullable|boolean',
         ];
 
@@ -144,7 +144,6 @@ class PerfilController extends Controller
             $rules['new_password'] = 'required|string|min:8|confirmed';
         }
 
-        // Mensagens de erro
         $messages = [
             'nome.required' => 'O nome completo é obrigatório.',
             'email.required' => 'O e-mail é obrigatório.',
@@ -186,44 +185,30 @@ class PerfilController extends Controller
                     ->withErrors(['current_password' => 'Senha atual incorreta.'])
                     ->withInput($request->except('password', 'password_confirmation'));
             }
-            $perfil->password = Hash::make($request->new_password);
-        }
-
-        // ⭐ PREPARA OS DADOS PARA ATUALIZAÇÃO
-        $dadosParaAtualizar = [
-            'nome' => $request->nome,
-            'nome_carteira' => $request->nome_carteira,
-            'telefone' => $request->telefone,
-            'dataNascimento' => $this->formatarData($request->dataNascimento),
-            'estadoCivil' => $request->estadoCivil,
-            'endereco' => $request->endereco,
-            'numero' => $request->numero,
-            'bairro' => $request->bairro,
-            'cep' => $request->cep,
-            'cidade' => $request->cidade,
-            'uf' => $request->uf,
-            'congregacao' => $request->congregacao,
-            'funcao' => $request->funcao,
-            'dataBatismo' => $this->formatarData($request->dataBatismo),
-            'data_Consagracao' => $this->formatarData($request->data_Consagracao),
-            'mae' => $request->mae,
-            'pai' => $request->pai,
-            'bio' => $this->formatarBio($request->bio), // ⭐ TRUNCA BIO SE NECESSÁRIO
-            'privacidade' => $request->has('privacidade'),
-        ];
-
-        // Atualiza email se foi alterado
-        if ($request->has('email') && $request->email !== $perfil->email) {
-            $dadosParaAtualizar['email'] = $request->email;
-        }
-
-        // Atualiza documento se foi alterado
-        if ($request->has('documento') && $request->documento !== $perfil->documento) {
-            $dadosParaAtualizar['documento'] = preg_replace('/[^0-9]/', '', $request->documento);
         }
 
         try {
-            // ⭐ ATUALIZA O PERFIL (OS MUTATORS DO MODEL FORMATAM AS DATAS)
+            // ⭐ CRIA DTO PARA ATUALIZAÇÃO
+            $updateDTO = UpdateMembroDTO::fromRequest([
+                ...$request->all(),
+                'matricula' => $perfil->matricula,
+                'password' => $request->new_password ?? null,
+            ]);
+
+            $dadosParaAtualizar = $updateDTO->toArray();
+            unset($dadosParaAtualizar['matricula']);
+
+            // ⭐ SE FOR SECRETÁRIO, NÃO PODE MUDAR A CONGREGAÇÃO
+            if ($user->isSecretario()) {
+                $dadosParaAtualizar['congregacao'] = $perfil->congregacao;
+            }
+
+            // ⭐ Hash da senha se fornecida
+            if ($request->filled('new_password')) {
+                $dadosParaAtualizar['password'] = Hash::make($request->new_password);
+            }
+
+            // ⭐ ATUALIZA O PERFIL
             $perfil->update($dadosParaAtualizar);
             
             Session::put('membro_nome', $perfil->nome);
@@ -264,12 +249,10 @@ class PerfilController extends Controller
             return null;
         }
 
-        // Se já estiver no formato Y-m-d, retorna
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
             return $data;
         }
 
-        // Se estiver no formato d/m/Y, converte
         if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $data)) {
             try {
                 $date = Carbon::createFromFormat('d/m/Y', $data);
@@ -279,7 +262,6 @@ class PerfilController extends Controller
             }
         }
 
-        // Tenta converter qualquer formato
         try {
             $date = Carbon::parse($data);
             return $date->format('Y-m-d');
@@ -297,7 +279,6 @@ class PerfilController extends Controller
             return null;
         }
 
-        // Limita a 5000 caracteres
         if (strlen($bio) > 5000) {
             return substr($bio, 0, 5000);
         }
@@ -317,7 +298,7 @@ class PerfilController extends Controller
             return redirect()->route('login')->with('error', 'Faça login para ver os posts.');
         }
 
-        $perfil = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
+        $perfil = Membro::on('mysql')->where('matricula', $matricula)->firstOrFail(); // ⭐ MUDADO de Filiado para Membro
 
         // ⭐ VERIFICA PERMISSÃO USANDO O MÉTODO PODE()
         $podeVer = $perfil->privacidade || 
@@ -497,7 +478,6 @@ class PerfilController extends Controller
                 'ip' => request()->ip()
             ]);
 
-            // ⭐ GERA IMAGEM PADRÃO
             return $this->gerarImagemPadrao();
         }
 
@@ -522,9 +502,8 @@ class PerfilController extends Controller
             'ip' => request()->ip()
         ]);
 
-        // Cria uma imagem SVG com as iniciais
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-            <rect width="200" height="200" rx="100" fill="#d4af37"/>
+            <rect width="200" height="200" rx="100" fill="#6C63FF"/>
             <text x="100" y="120" font-family="Arial" font-size="80" font-weight="bold" fill="white" text-anchor="middle">👤</text>
         </svg>';
 

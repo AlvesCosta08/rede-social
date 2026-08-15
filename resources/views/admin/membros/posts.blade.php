@@ -360,8 +360,5 @@
         }
     }
 
-    console.log('👑 Admin - Página de posts carregada');
-    console.log('👤 Membro: {{ $membro->nome }}');
-    console.log('📄 Total de publicações: {{ $publicacoes->total() }}');
 </script>
 @endsection

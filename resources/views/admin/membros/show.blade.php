@@ -494,9 +494,7 @@
 
 @push('scripts')
 <script>
-    console.log('👤 Visualizando membro: {{ $membro->nome }} (Matrícula #{{ $membro->matricula }})');
     @if(isset($membro->nivel))
-        console.log('🏷️ Nível: {{ $membro->nivel }}');
     @endif
 </script>
 @endpush

@@ -545,7 +545,6 @@
 
 @push('scripts')
 <script>
-    console.log('📝 Formulário de cadastro de membros carregado');
     
     // Máscara para telefone
     document.getElementById('telefone')?.addEventListener('input', function(e) {
@@ -599,7 +598,6 @@
     });
 
     @if(auth()->user()?->isAdmin())
-        console.log('👑 Usuário ADMIN - campo Nível disponível');
     @endif
 </script>
 @endpush

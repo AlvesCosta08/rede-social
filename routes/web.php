@@ -1,16 +1,21 @@
 <?php
 
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\MembroController;
 use App\Http\Controllers\ImagemController;
 use App\Http\Controllers\SeguidorController;
-use App\Http\Controllers\Admin\MembroController as AdminMembroController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\SecretarioController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 
-// ===== REDIRECIONAMENTO INICIAL =====
+// ============================================================
+// REDIRECIONAMENTO INICIAL
+// ============================================================
 Route::redirect('/', '/login')->name('home.redirect');
 
 // ============================================================
@@ -18,13 +23,19 @@ Route::redirect('/', '/login')->name('home.redirect');
 // ============================================================
 
 Route::middleware(['throttle:60,1'])->group(function () {
-    Route::get('/verificar-matricula/{matricula}', [AuthController::class, 'verificarMatricula'])
+    // ⭐ VERIFICAÇÃO DE MATRÍCULA PARA CADASTRO (AJAX)
+    Route::get('/verificar-matricula/{matricula}', [RegisterController::class, 'verificarMatricula'])
         ->name('verificar.matricula')
         ->where('matricula', '[0-9]+');
 
-    Route::get('/buscar-membro-antigo/{matricula}', [AuthController::class, 'buscarMembroAntigo'])
-        ->name('buscar.membro.antigo')
+    // ⭐ BUSCAR MEMBRO PARA CADASTRO (AJAX)
+    Route::get('/buscar-membro/{matricula}', [RegisterController::class, 'buscarMembro'])
+        ->name('buscar.membro')
         ->where('matricula', '[0-9]+');
+    
+    // ⭐ NOVA ROTA: VERIFICAR EMAIL PARA CADASTRO (AJAX)
+    Route::post('/verificar-email', [RegisterController::class, 'verificarEmail'])
+        ->name('verificar.email');
 });
 
 // ============================================================
@@ -32,22 +43,24 @@ Route::middleware(['throttle:60,1'])->group(function () {
 // ============================================================
 
 Route::middleware(['guest', 'throttle:10,1'])->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    // LOGIN
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('login.post');
     
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+    // REGISTRO
+    Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register'])->name('register.post');
 });
 
 // ============================================================
 // LOGOUT
 // ============================================================
 
-Route::middleware(['auth'])->post('/logout', [AuthController::class, 'logout'])
+Route::middleware(['auth'])->post('/logout', [LogoutController::class, 'logout'])
     ->name('logout');
 
 // ============================================================
-// ROTAS PROTEGIDAS
+// ROTAS PROTEGIDAS (AUTENTICADAS)
 // ============================================================
 
 Route::middleware(['auth'])->group(function () {
@@ -88,7 +101,6 @@ Route::middleware(['auth'])->group(function () {
             ->where('id', '[0-9]+')
             ->middleware(['throttle:15,1']);
         
-        // Deletar comentário
         Route::delete('/comentario/{id}', [FeedController::class, 'deleteComentario'])
             ->name('delete-comentario')
             ->where('id', '[0-9]+')
@@ -105,7 +117,6 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/editar', [PerfilController::class, 'update'])->name('update')
             ->middleware(['throttle:10,1']);
         
-        // ROTAS DE FOTO
         Route::post('/foto', [PerfilController::class, 'uploadFoto'])
             ->name('foto.upload');
         
@@ -126,18 +137,18 @@ Route::middleware(['auth'])->group(function () {
     // ============================================================
     // CARTÃO DIGITAL
     // ============================================================
-    Route::prefix('cartao')->name('membro.')->group(function () {
+    Route::prefix('cartao')->name('cartao.')->group(function () {
         Route::get('/meu-cartao', [MembroController::class, 'meuCartao'])->name('meu-cartao')
             ->middleware(['throttle:20,1']);
             
         Route::get('/{matricula}', [MembroController::class, 'cartao'])
-            ->name('cartao')
+            ->name('show')
             ->where('matricula', '[0-9]+')
             ->middleware(['throttle:50,1']);
     });
 
     // ============================================================
-    // MEMBROS
+    // MEMBROS (Membro Comum)
     // ============================================================
     Route::prefix('membros')->name('membros.')->group(function () {
         Route::get('/', [MembroController::class, 'index'])->name('index')
@@ -150,16 +161,6 @@ Route::middleware(['auth'])->group(function () {
             ->name('autocomplete')
             ->middleware(['throttle:200,1']);
         
-        // Busca avançada
-        Route::get('/buscar-avancado', [MembroController::class, 'buscarAvancado'])
-            ->name('buscar.avancado')
-            ->middleware(['throttle:30,1']);
-        
-        // Busca com highlight
-        Route::get('/buscar-highlight', [MembroController::class, 'buscarComHighlight'])
-            ->name('buscar.highlight')
-            ->middleware(['throttle:20,1']);
-        
         Route::get('/proximidade', [MembroController::class, 'buscarPorProximidade'])
             ->name('proximidade')
             ->middleware(['throttle:20,1']);
@@ -167,14 +168,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/sugestoes', [MembroController::class, 'sugestoes'])
             ->name('sugestoes')
             ->middleware(['throttle:50,1']);
-        
-        Route::get('/estatisticas', [MembroController::class, 'estatisticas'])
-            ->name('estatisticas')
-            ->middleware(['throttle:30,1']);
-        
-        Route::get('/exportar', [MembroController::class, 'exportar'])
-            ->name('exportar')
-            ->middleware(['throttle:10,1']);
         
         Route::post('/localizacao', [MembroController::class, 'atualizarLocalizacao'])
             ->name('localizacao')
@@ -213,7 +206,6 @@ Route::middleware(['auth'])->group(function () {
             ->where('matricula', '[0-9]+')
             ->middleware(['throttle:100,1']);
         
-        // Verificar se segue
         Route::get('/verificar/{seguidor}/{seguido}', [SeguidorController::class, 'verificarSegue'])
             ->name('verificar')
             ->where('seguidor', '[0-9]+')
@@ -224,99 +216,124 @@ Route::middleware(['auth'])->group(function () {
     // ============================================================
     // ADMIN - ROTAS COM PERMISSÃO
     // ============================================================
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
         
-        // ⭐ ROTAS DE MEMBROS - TODAS AS OPERAÇÕES
+        // ⭐ DASHBOARD DO ADMIN
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])
+            ->name('dashboard')
+            ->middleware(['permissao:dashboard', 'throttle:60,1']);
+
+        // ⭐ ROTAS DE MEMBROS (ADMIN)
         Route::prefix('membros')->name('membros.')->group(function () {
             
-            // Listar membros (dashboard)
-            Route::get('/', [AdminMembroController::class, 'index'])
+            // Listar membros
+            Route::get('/', [AdminController::class, 'index'])
                 ->name('index')
                 ->middleware(['permissao:dashboard', 'throttle:300,1']);
             
-            // Visualizar membro (show) - TODOS COM PERMISSÃO DASHBOARD PODEM VER
-            Route::get('/{matricula}', [AdminMembroController::class, 'show'])
+            // Visualizar membro
+            Route::get('/{matricula}', [AdminController::class, 'show'])
                 ->name('show')
                 ->where('matricula', '[0-9]+')
                 ->middleware(['permissao:dashboard', 'throttle:100,1']);
             
-            // Criar membro (create/store)
-            Route::get('/create', [AdminMembroController::class, 'create'])
+            // Criar membro
+            Route::get('/create', [AdminController::class, 'create'])
                 ->name('create')
                 ->middleware(['permissao:criar_membro', 'throttle:50,1']);
             
-            Route::post('/', [AdminMembroController::class, 'store'])
+            Route::post('/', [AdminController::class, 'store'])
                 ->name('store')
                 ->middleware(['permissao:criar_membro', 'throttle:20,1']);
             
-            // Editar membro (edit/update)
-            Route::get('/{matricula}/edit', [AdminMembroController::class, 'edit'])
+            // Editar membro
+            Route::get('/{matricula}/edit', [AdminController::class, 'edit'])
                 ->name('edit')
                 ->where('matricula', '[0-9]+')
                 ->middleware(['permissao:editar_membro', 'throttle:50,1']);
             
-            Route::put('/{matricula}', [AdminMembroController::class, 'update'])
+            Route::put('/{matricula}', [AdminController::class, 'update'])
                 ->name('update')
                 ->where('matricula', '[0-9]+')
                 ->middleware(['permissao:editar_membro', 'throttle:20,1']);
             
             // Deletar membro
-            Route::delete('/{matricula}', [AdminMembroController::class, 'destroy'])
+            Route::delete('/{matricula}', [AdminController::class, 'destroy'])
                 ->name('destroy')
                 ->where('matricula', '[0-9]+')
                 ->middleware(['permissao:excluir_membro', 'throttle:10,1']);
             
             // Ações em massa
-            Route::post('/bulk', [AdminMembroController::class, 'bulkAction'])
+            Route::post('/bulk', [AdminController::class, 'bulkAction'])
                 ->name('bulk')
-                ->middleware(['permissao:editar_membro', 'throttle:20,1']);
+                ->middleware(['permissao:dashboard', 'throttle:20,1']);
             
             // Exportar
-            Route::get('/exportar', [AdminMembroController::class, 'exportar'])
+            Route::get('/exportar', [AdminController::class, 'exportar'])
                 ->name('exportar')
                 ->middleware(['permissao:dashboard', 'throttle:10,1']);
             
             // Posts de membros
-            Route::get('/{matricula}/posts', [AdminMembroController::class, 'posts'])
+            Route::get('/{matricula}/posts', [AdminController::class, 'posts'])
                 ->name('posts')
                 ->where('matricula', '[0-9]+')
                 ->middleware(['permissao:dashboard', 'throttle:100,1']);
+
+            // ⭐ UPLOAD DE FOTO (ADMIN)
+            Route::post('/{matricula}/foto', [AdminController::class, 'uploadFoto'])
+                ->name('upload-foto')
+                ->middleware(['permissao:editar_membro', 'throttle:10,1']);
         });
 
         // ⭐ ESTATÍSTICAS
-        Route::get('/estatisticas', [AdminMembroController::class, 'estatisticas'])
+        Route::get('/estatisticas', [AdminController::class, 'estatisticas'])
             ->name('estatisticas')
             ->middleware(['permissao:dashboard', 'throttle:30,1']);
 
         // ⭐ DELETAR POST (via admin)
-        Route::delete('/posts/{id}', [AdminMembroController::class, 'deletePost'])
+        Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])
             ->name('posts.delete')
             ->where('id', '[0-9]+')
-            ->middleware(['permissao:moderar_posts', 'throttle:10,1']);
+            ->middleware(['permissao:dashboard', 'throttle:10,1']);
 
         // ⭐ GERENCIAR SECRETÁRIOS - APENAS ADMIN
         Route::prefix('secretarios')->name('secretarios.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\SecretarioController::class, 'index'])
+            Route::get('/', [SecretarioController::class, 'index'])
                 ->name('index')
-                ->middleware(['permissao:gerenciar_secretarios']);
+                ->middleware(['permissao:gerenciar_secretarios', 'throttle:60,1']);
             
-            Route::put('/{user}', [\App\Http\Controllers\Admin\SecretarioController::class, 'update'])
+            Route::put('/{matricula}', [SecretarioController::class, 'update'])
                 ->name('update')
-                ->middleware(['permissao:gerenciar_secretarios']);
+                ->where('matricula', '[0-9]+')
+                ->middleware(['permissao:gerenciar_secretarios', 'throttle:20,1']);
             
-            Route::delete('/{user}', [\App\Http\Controllers\Admin\SecretarioController::class, 'destroy'])
+            Route::delete('/{matricula}', [SecretarioController::class, 'destroy'])
                 ->name('destroy')
-                ->middleware(['permissao:gerenciar_secretarios']);
+                ->where('matricula', '[0-9]+')
+                ->middleware(['permissao:gerenciar_secretarios', 'throttle:10,1']);
+            
+            Route::get('/estatisticas', [SecretarioController::class, 'estatisticas'])
+                ->name('estatisticas')
+                ->middleware(['permissao:gerenciar_secretarios', 'throttle:30,1']);
+            
+            Route::get('/buscar-membros', [SecretarioController::class, 'buscarMembros'])
+                ->name('buscar-membros')
+                ->middleware(['permissao:gerenciar_secretarios', 'throttle:60,1']);
+
+            // ⭐ UPLOAD DE FOTO (SECRETÁRIO)
+            Route::post('/{matricula}/foto', [SecretarioController::class, 'uploadFoto'])
+                ->name('upload-foto')
+                ->middleware(['permissao:editar_membro', 'throttle:10,1']);
         });
     });
 
     // ============================================================
     // SAIR DA IGREJA
     // ============================================================
-    Route::get('/sair-igreja', [AuthController::class, 'showSair'])->name('sair.igreja')
+    Route::get('/sair-igreja', [LogoutController::class, 'showSairForm'])->name('sair.igreja')
         ->middleware(['throttle:20,1']);
         
-    Route::post('/sair-igreja', [AuthController::class, 'sair'])->name('sair.igreja.confirmar')
+    Route::post('/sair-igreja', [LogoutController::class, 'sair'])->name('sair.igreja.confirmar')
         ->middleware(['throttle:5,1']);
 });
 
@@ -329,13 +346,16 @@ Route::get('/imagens/fotos/{filename}', [ImagemController::class, 'show'])
     ->where('filename', '^[a-zA-Z0-9_\-\.]+$')
     ->middleware(['throttle:100,1']);
 
-// Upload de imagem via ImagemController
 Route::post('/imagens/upload', [ImagemController::class, 'upload'])
     ->name('imagem.upload')
     ->middleware(['auth', 'throttle:10,1']);
 
+Route::delete('/imagens/fotos', [ImagemController::class, 'destroy'])
+    ->name('imagem.destroy')
+    ->middleware(['auth', 'throttle:10,1']);
+
 // ============================================================
-// FALLBACK
+// FALLBACK - 404
 // ============================================================
 
 Route::fallback(function () {

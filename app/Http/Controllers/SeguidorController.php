@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Filiado;
+use App\Models\Membro; // ⭐ MUDADO de Filiado para Membro
 use App\Models\Seguidor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,7 +36,7 @@ class SeguidorController extends Controller
 
         try {
             // Verifica se o membro existe
-            $membro = Filiado::on('mysql')->where('matricula', $matricula)->first();
+            $membro = Membro::on('mysql')->where('matricula', $matricula)->first(); // ⭐ MUDADO de Filiado para Membro
             if (!$membro) {
                 return response()->json([
                     'success' => false,
@@ -44,23 +44,16 @@ class SeguidorController extends Controller
                 ], 404);
             }
 
-            // Verifica se já segue
-            $jaSegue = Seguidor::on('mysql')
-                ->where('seguidor_matricula', $user->matricula)
-                ->where('seguido_matricula', $matricula)
-                ->exists();
-
-            if ($jaSegue) {
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            if ($user->segue($membro)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Você já segue este membro.'
                 ], 400);
             }
 
-            // Cria o relacionamento
-            Seguidor::on('mysql')->create([
-                'seguidor_matricula' => $user->matricula,
-                'seguido_matricula' => $matricula,
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            $user->seguindo()->attach($membro->matricula, [
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -108,7 +101,7 @@ class SeguidorController extends Controller
 
         try {
             // Verifica se o membro existe
-            $membro = Filiado::on('mysql')->where('matricula', $matricula)->first();
+            $membro = Membro::on('mysql')->where('matricula', $matricula)->first(); // ⭐ MUDADO de Filiado para Membro
             if (!$membro) {
                 return response()->json([
                     'success' => false,
@@ -116,24 +109,16 @@ class SeguidorController extends Controller
                 ], 404);
             }
 
-            // Verifica se segue
-            $jaSegue = Seguidor::on('mysql')
-                ->where('seguidor_matricula', $user->matricula)
-                ->where('seguido_matricula', $matricula)
-                ->exists();
-
-            if (!$jaSegue) {
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            if (!$user->segue($membro)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Você não segue este membro.'
                 ], 400);
             }
 
-            // Remove o relacionamento
-            Seguidor::on('mysql')
-                ->where('seguidor_matricula', $user->matricula)
-                ->where('seguido_matricula', $matricula)
-                ->delete();
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            $user->seguindo()->detach($membro->matricula);
 
             Log::info('✅ Deixou de seguir', [
                 'seguidor' => $user->matricula,
@@ -178,16 +163,13 @@ class SeguidorController extends Controller
         }
 
         try {
-            // Membros que o usuário já segue
-            $seguindo = Seguidor::on('mysql')
-                ->where('seguidor_matricula', $user->matricula)
-                ->pluck('seguido_matricula')
-                ->toArray();
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            $seguindo = $user->seguindo()->pluck('matricula')->toArray();
 
             // Não sugerir a si mesmo nem quem já segue
             $excluir = array_merge($seguindo, [$user->matricula]);
 
-            $sugestoes = Filiado::on('mysql')
+            $sugestoes = Membro::on('mysql') // ⭐ MUDADO de Filiado para Membro
                 ->where('status', 'ativo')
                 ->whereNotIn('matricula', $excluir)
                 ->inRandomOrder()
@@ -234,7 +216,7 @@ class SeguidorController extends Controller
     public function seguindo($matricula)
     {
         try {
-            $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
+            $membro = Membro::on('mysql')->where('matricula', $matricula)->firstOrFail(); // ⭐ MUDADO de Filiado para Membro
 
             // ⭐ VERIFICA SE O USUÁRIO LOGADO PODE VER SEGUINDO DE OUTROS
             $user = Auth::user();
@@ -249,12 +231,10 @@ class SeguidorController extends Controller
                 }
             }
 
-            $seguindo = Seguidor::on('mysql')
-                ->where('seguidor_matricula', $matricula)
-                ->with(['seguido' => function($query) {
-                    $query->select('matricula', 'nome', 'foto', 'funcao', 'cidade');
-                }])
-                ->orderBy('created_at', 'desc')
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            $seguindo = $membro->seguindo()
+                ->select('matricula', 'nome', 'foto', 'funcao', 'cidade')
+                ->orderBy('nome')
                 ->paginate(20);
 
             Log::info('📋 Lista de seguindo', [
@@ -273,12 +253,12 @@ class SeguidorController extends Controller
                 'total' => $seguindo->total(),
                 'seguindo' => $seguindo->map(function($item) {
                     return [
-                        'matricula' => $item->seguido->matricula,
-                        'nome' => $item->seguido->nome,
-                        'foto_url' => $item->seguido->foto_url,
-                        'funcao' => $item->seguido->funcao ?? 'Membro',
-                        'cidade' => $item->seguido->cidade,
-                        'url' => route('perfil.show', $item->seguido->matricula)
+                        'matricula' => $item->matricula,
+                        'nome' => $item->nome,
+                        'foto_url' => $item->foto_url,
+                        'funcao' => $item->funcao ?? 'Membro',
+                        'cidade' => $item->cidade,
+                        'url' => route('perfil.show', $item->matricula)
                     ];
                 })
             ]);
@@ -303,7 +283,7 @@ class SeguidorController extends Controller
     public function seguidores($matricula)
     {
         try {
-            $membro = Filiado::on('mysql')->where('matricula', $matricula)->firstOrFail();
+            $membro = Membro::on('mysql')->where('matricula', $matricula)->firstOrFail(); // ⭐ MUDADO de Filiado para Membro
 
             // ⭐ VERIFICA SE O USUÁRIO LOGADO PODE VER SEGUIDORES DE OUTROS
             $user = Auth::user();
@@ -318,12 +298,10 @@ class SeguidorController extends Controller
                 }
             }
 
-            $seguidores = Seguidor::on('mysql')
-                ->where('seguido_matricula', $matricula)
-                ->with(['seguidor' => function($query) {
-                    $query->select('matricula', 'nome', 'foto', 'funcao', 'cidade');
-                }])
-                ->orderBy('created_at', 'desc')
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            $seguidores = $membro->seguidores()
+                ->select('matricula', 'nome', 'foto', 'funcao', 'cidade')
+                ->orderBy('nome')
                 ->paginate(20);
 
             Log::info('📋 Lista de seguidores', [
@@ -342,12 +320,12 @@ class SeguidorController extends Controller
                 'total' => $seguidores->total(),
                 'seguidores' => $seguidores->map(function($item) {
                     return [
-                        'matricula' => $item->seguidor->matricula,
-                        'nome' => $item->seguidor->nome,
-                        'foto_url' => $item->seguidor->foto_url,
-                        'funcao' => $item->seguidor->funcao ?? 'Membro',
-                        'cidade' => $item->seguidor->cidade,
-                        'url' => route('perfil.show', $item->seguidor->matricula)
+                        'matricula' => $item->matricula,
+                        'nome' => $item->nome,
+                        'foto_url' => $item->foto_url,
+                        'funcao' => $item->funcao ?? 'Membro',
+                        'cidade' => $item->cidade,
+                        'url' => route('perfil.show', $item->matricula)
                     ];
                 })
             ]);
@@ -371,10 +349,18 @@ class SeguidorController extends Controller
     public function verificarSegue($seguidor, $seguido)
     {
         try {
-            $segue = Seguidor::on('mysql')
-                ->where('seguidor_matricula', $seguidor)
-                ->where('seguido_matricula', $seguido)
-                ->exists();
+            $seguidorMembro = Membro::on('mysql')->where('matricula', $seguidor)->first(); // ⭐ MUDADO de Filiado para Membro
+            $seguidoMembro = Membro::on('mysql')->where('matricula', $seguido)->first(); // ⭐ MUDADO de Filiado para Membro
+
+            if (!$seguidorMembro || !$seguidoMembro) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Membro não encontrado.'
+                ], 404);
+            }
+
+            // ⭐ USA O RELACIONAMENTO DO MODEL
+            $segue = $seguidorMembro->segue($seguidoMembro);
 
             return response()->json([
                 'success' => true,
@@ -400,8 +386,6 @@ class SeguidorController extends Controller
      */
     private function countSeguidores($matricula)
     {
-        return Seguidor::on('mysql')
-            ->where('seguido_matricula', $matricula)
-            ->count();
+        return Membro::on('mysql')->where('matricula', $matricula)->first()?->seguidores()->count() ?? 0;
     }
 }

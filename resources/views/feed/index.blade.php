@@ -1207,10 +1207,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
 
-    console.log('📱 Feed carregado');
-    console.log('👤 Usuário: {{ $membro->nome }}');
-    console.log('📊 Seguindo: {{ $membro->seguindo_count ?? 0 }}');
-    console.log('📄 Publicações: {{ $publicacoes->count() }}');
 });
 </script>
 @endpush

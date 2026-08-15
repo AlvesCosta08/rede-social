@@ -1,94 +1,158 @@
-# 🏛️ **Sistema de Comunidade Cristã**
+<div align="center">
 
-## 📌 **Sobre o Projeto**
+# 🏛️ **SISTEMA COMUNIDADE CRISTÃ**
 
-O **Sistema de Comunidade Cristã** é uma plataforma web robusta desenvolvida em **Laravel** que visa facilitar a comunicação, integração e gestão de membros em comunidades religiosas. A solução oferece funcionalidades completas de rede social, aliadas a ferramentas administrativas para gerenciamento eficiente de membros e conteúdo.
+### *Plataforma completa para gestão de membros e interação social*
 
----
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-## 🎯 **Objetivos do Sistema**
-
-- 🔗 **Conectar** membros da comunidade através de interações sociais
-- 💬 **Facilitar** a comunicação entre os participantes
-- 📊 **Gerenciar** informações de membros de forma centralizada
-- 📱 **Promover** engajamento através de publicações e interações
-- ⚡ **Simplificar** tarefas administrativas com ferramentas dedicadas
+</div>
 
 ---
 
-## ✨ **Principais Funcionalidades**
+## 📋 **ÍNDICE**
 
-### 🔐 Autenticação e Segurança
-- Sistema de login/registro com verificação de matrícula
-- Proteção contra ataques de força bruta
-- Gerenciamento de sessão e logout
-- Middleware de autenticação para rotas protegidas
+- [📖 Sobre o Projeto](#-sobre-o-projeto)
+- [✨ Funcionalidades](#-funcionalidades)
+- [🛠️ Tecnologias](#️-tecnologias)
+- [🏗️ Arquitetura](#️-arquitetura)
+- [👥 Níveis de Usuário](#-níveis-de-usuário)
+- [🔐 Permissões](#-permissões)
+- [📂 Estrutura do Projeto](#-estrutura-do-projeto)
+- [🚀 Instalação](#-instalação)
+- [⚙️ Configuração](#️-configuração)
+- [📡 Rotas Principais](#-rotas-principais)
+- [📊 API Endpoints](#-api-endpoints)
+- [🛠️ Comandos Úteis](#️-comandos-úteis)
+- [🧪 Testes](#-testes)
+- [🤝 Contribuição](#-contribuição)
+- [📄 Licença](#-licença)
 
-### 📱 Feed de Publicações
-- Criação, edição e remoção de posts
+---
+
+## 📖 **SOBRE O PROJETO**
+
+Sistema desenvolvido para **gestão completa de membros** de uma comunidade cristã, combinando funcionalidades administrativas com interação social.
+
+### 🎯 **Objetivos**
+
+- ✅ Gerenciar membros com diferentes níveis de acesso
+- ✅ Facilitar a comunicação entre membros
+- ✅ Oferecer carteira digital personalizada
+- ✅ Gerar estatísticas e relatórios
+- ✅ Garantir segurança e controle de permissões
+
+---
+
+## ✨ **FUNCIONALIDADES**
+
+### 👤 **Membros**
+- Cadastro completo com dados pessoais
+- Sistema de níveis (Admin, Secretário, Membro)
+- Carteira digital com foto e dados
+- Geolocalização de membros
+- Sistema de seguidores
+
+### 📱 **Feed Social**
+- Publicações com texto
 - Sistema de curtidas
 - Comentários em publicações
-- Feed personalizado por membro
-- Feed global com todas as publicações
+- Feed personalizado (seguindo)
+- Feed global
 
-### 👤 Perfil e Identidade Digital
-- Visualização de perfis de membros
-- Edição de informações pessoais
-- Upload e remoção de foto de perfil
-- Cartão digital do membro
-- Histórico de publicações por membro
-
-### 🔍 Busca e Descoberta
-- Busca avançada por membros
-- Autocomplete para navegação rápida
-- Filtros por cargo, função e localização
-- Sugestões de membros baseadas em interesses
-- Busca por proximidade geográfica
-
-### 👥 Sistema de Seguidores
-- Seguir e deixar de seguir membros
-- Lista de seguidores e seguidos
-- Sugestões inteligentes de conexões
-- Verificação de relacionamento entre membros
-
-### 🛡️ Painel Administrativo
+### 🔐 **Administração**
+- Dashboard com estatísticas
 - CRUD completo de membros
-- Ações em massa (ativação, desativação, exclusão)
-- Estatísticas detalhadas do sistema
-- Exportação de dados
-- Gerenciamento de conteúdo (posts, comentários)
+- Gerenciamento de secretários
+- Ações em massa (ativar, inativar, transferir, excluir)
+- Exportação de dados (CSV)
+- Sistema de permissões granulares
+
+### 🎨 **Interface**
+- Design responsivo
+- Badges de status e níveis
+- Upload de foto de perfil
+- Busca e filtros avançados
 
 ---
 
-## 🛠️ **Stack Tecnológica**
+## 🛠️ **TECNOLOGIAS**
 
-### Backend
+### **Backend**
+| Tecnologia | Versão | Descrição |
+|------------|--------|-----------|
+| **PHP** | ^8.4 | Linguagem de programação |
+| **Laravel** | ^12.0 | Framework PHP |
+| **MySQL** | 8.0+ | Banco de dados relacional |
+| **Laravel Sanctum** | ^4.0 | Autenticação API |
+| **Laravel Tinker** | ^2.9 | REPL para Laravel |
 
-| Tecnologia | Versão | Finalidade |
-|------------|--------|------------|
-| PHP | 8.0+ | Linguagem principal |
-| Laravel | 10.x | Framework MVC |
-| MySQL | 8.0+ | Banco de dados relacional |
-| Redis | 7.0+ | Cache e filas |
+### **Frontend**
+| Tecnologia | Descrição |
+|------------|-----------|
+| **Bootstrap** | Framework CSS |
+| **Blade** | Template engine do Laravel |
+| **jQuery** | Biblioteca JavaScript |
+| **Chart.js** | Gráficos e estatísticas |
 
-### Frontend
-
-| Tecnologia | Versão | Finalidade |
-|------------|--------|------------|
-| HTML5 | - | Estrutura |
-| CSS3 | - | Estilização |
-| Bootstrap | 5.x | Framework CSS |
-| JavaScript | ES6+ | Interatividade |
-| jQuery | 3.x | Manipulação DOM |
-
-### DevOps & Ferramentas
-
-- **Git** - Controle de versão
-- **Composer** - Gerenciamento de dependências PHP
-- **NPM** - Gerenciamento de dependências JavaScript
-- **Docker** - Containerização (opcional)
-- **PHPUnit** - Testes automatizados
+### **Ferramentas de Desenvolvimento**
+| Ferramenta | Descrição |
+|------------|-----------|
+| **Composer** | Gerenciador de dependências PHP |
+| **Git** | Controle de versão |
+| **VS Code** | Editor recomendado |
+| **Laravel Pint** | Code style fixer |
 
 ---
 
-## 📊 **Arquitetura do Sistema**
+## 🏗️ **ARQUITETURA**
+
+### **Padrões Utilizados**
+
+
+
+### **Camadas da Aplicação**
+
+| Camada | Descrição | Diretório |
+|--------|-----------|-----------|
+| **Presentation** | Controllers, Views, Resources | `app/Http/Controllers/` |
+| **Application** | Services, DTOs | `app/Services/`, `app/DTOs/` |
+| **Domain** | Models, Contracts | `app/Models/`, `app/Contracts/` |
+| **Infrastructure** | Repositories, Migrations | `app/Repositories/`, `database/` |
+
+---
+
+## 👥 **NÍVEIS DE USUÁRIO**
+
+### 👑 **Administrador**
+
+
+---
+
+## 🔐 **PERMISSÕES**
+
+### **Matriz de Permissões**
+
+| Ação | Admin | Secretário | Membro Comum |
+|------|:-----:|:----------:|:------------:|
+| `criar_membro` | ✅ | ✅ * | ❌ |
+| `editar_membro` | ✅ | ✅ * | ✅ ** |
+| `excluir_membro` | ✅ | ✅ * | ❌ |
+| `excluir_propria_conta` | ✅ | ❌ | ✅ |
+| `dashboard` | ✅ | ✅ | ❌ |
+| `ver_membros` | ✅ | ✅ | ✅ |
+| `ver_membro` | ✅ | ✅ | ✅ |
+| `exportar_membros` | ✅ | ✅ * | ❌ |
+| `gerenciar_secretarios` | ✅ | ❌ | ❌ |
+| `ver_financeiro` | ✅ | ❌ | ❌ |
+| `configurar_sistema` | ✅ | ❌ | ❌ |
+
+> `*` Apenas membros da sua congregação  
+> `**` Apenas o próprio perfil
+
+---
+
+## 📂 **ESTRUTURA DO PROJETO**

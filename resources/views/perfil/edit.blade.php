@@ -886,9 +886,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    console.log('📝 Perfil edit carregado');
-    console.log('👤 Usuário: {{ $perfil->nome }}');
-    console.log('📋 Matrícula: {{ $perfil->matricula }}');
 });
 </script>
 @endpush

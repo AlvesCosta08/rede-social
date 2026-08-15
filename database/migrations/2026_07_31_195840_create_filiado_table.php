@@ -18,8 +18,8 @@ return new class extends Migration
         // 2. MODIFICAR CAMPOS EXISTENTES
         // ========================================
         Schema::table('filiado', function (Blueprint $table) {
-            // Matrícula como AUTO_INCREMENT (mantendo dados)
-            $table->integer('matricula', true)->change();
+            // Matrícula como string (mantendo dados)
+            $table->string('matricula', 20)->change();
             
             // Campos NOT NULL com valores padrão
             $table->string('congregacao')->nullable()->change();
@@ -51,7 +51,6 @@ return new class extends Migration
         // 3. ADICIONAR CAMPOS FALTANTES
         // ========================================
         Schema::table('filiado', function (Blueprint $table) {
-            // Campos que o model usa mas não existem
             if (!Schema::hasColumn('filiado', 'telefone2')) {
                 $table->string('telefone2')->nullable()->after('telefone');
             }
@@ -93,29 +92,24 @@ return new class extends Migration
         // ========================================
         // 5. AJUSTAR DADOS EXISTENTES
         // ========================================
-        // Corrigir status vazios ou nulos
         DB::table('filiado')
             ->whereNull('status')
             ->orWhere('status', '')
             ->update(['status' => 'ativo']);
         
-        // Corrigir funcao vazia
         DB::table('filiado')
             ->whereNull('funcao')
             ->orWhere('funcao', '')
             ->update(['funcao' => 'Membro']);
         
-        // Preencher datCadastro se vazio
         DB::table('filiado')
             ->whereNull('datCadastro')
             ->update(['datCadastro' => now()]);
         
-        // Preencher created_at com datCadastro
         DB::table('filiado')
             ->whereNull('created_at')
             ->update(['created_at' => DB::raw('datCadastro')]);
         
-        // Preencher updated_at com created_at
         DB::table('filiado')
             ->whereNull('updated_at')
             ->update(['updated_at' => DB::raw('created_at')]);
@@ -123,7 +117,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Rollback seguro (remover apenas o que adicionamos)
         Schema::table('filiado', function (Blueprint $table) {
             $table->dropColumn(['telefone2', 'data_saida', 'remember_token', 'created_at', 'updated_at']);
             $table->dropUnique(['email']);
